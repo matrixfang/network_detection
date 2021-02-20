@@ -7,13 +7,16 @@ import pandas as pd
 from npeet import entropy_estimators as ee
 import os
 from tqdm import tqdm
+import igraph
+from collections import Counter
+
 
 def sent_notifer():
     command = "terminal-notifier -activate 'com.microsoft.VSCode' -sender 'com.microsoft.VSCode' -title 'python notifer' -message 'Your python program has finished!' "
     os.system(command)
     os.system('say "your program has finished"')
     # com.apple.Safari
-    # 
+    
     pass
 
     
@@ -37,21 +40,64 @@ class index_local(object):
         return 3
    
     @staticmethod 
-    def cutoff_distance(g,ni,nj,rand_node):
-        return index_local._cutoff_distance(g,ni,nj),index_local._cutoff_distance(g,ni,rand_node)
+    def cutoff_distance(uG,ni,nj,rand_node):
+        return index_local._cutoff_distance(uG,ni,nj),index_local._cutoff_distance(uG,ni,rand_node)
         
     @staticmethod
-    def _shortest_path_length(g,ni,nj):
+    def _shortest_path_length(uG,ni,nj):
         try:
-            length = nx.shortest_path_length(g, source=ni, target=nj)
+            length = nx.shortest_path_length(uG, source=ni, target=nj)
         except nx.exception.NetworkXNoPath:
             return 100
         else:
             return length
     @staticmethod
-    def shortest_path_length(g,ni,nj,rand_node):
-        return index_local._shortest_path_length(g,ni,nj),index_local._shortest_path_length(g,ni,rand_node)
+    def shortest_path_length(uG,ni,nj,rand_node):
+        return index_local._shortest_path_length(uG,ni,nj),index_local._shortest_path_length(uG,ni,rand_node)
+    
+    @staticmethod
+    def resource_allocation(uG,ni,nj,rand_node):
+        a,b = nx.resource_allocation_index(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    @staticmethod 
+    def jaccard_coefficient(uG, ni,nj,rand_node):
+        a,b = nx.jaccard_coefficient(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    @staticmethod
+    def adamic_adar_index(uG,ni,nj,rand_node):
+        a,b = nx.adamic_adar_index(uG, [(ni, nj), (ni, rand_node)])
+        return a[2],b[2]
+    @staticmethod
+    def preferential_attachment(uG, ni,nj,rand_node):
+        a,b = nx.preferential_attachment(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    
+    @staticmethod
+    def cn_soundarajan_hopcroft(uG,ni,nj,rand_node):
+        a,b = nx.cn_soundarajan_hopcroft(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    @staticmethod
+    def ra_index_soundarajan_hopcroft(uG, ni, nj,rand_node):
+        a,b = nx.ra_index_soundarajan_hopcroft(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    @staticmethod
+    def within_inter_cluster(uG,ni,nj,rand_node):
+        a,b = nx.within_inter_cluster(uG,[(ni,nj),(ni,rand_node)])
+        return a[2],b[2]
+    @staticmethod
+    def common_neighbor_centrality(uG,ni,nj,rand_node):
+        alpha = 0.8
+        a =  0.8*len(list(nx.common_neighbors(uG,ni,nj)))+(1-alpha)*len(uG.nodes())/index_local._shortest_path_length(uG,ni,nj)
+        b =  0.8*len(list(nx.common_neighbors(uG,ni,rand_node))) + (1-alpha)*len(uG.nodes())/index_local._shortest_path_length(uG,ni,rand_node)
         
+        # a,b = nx.common_neighbor_centrality(uG,[(ni,nj),(ni,rand_node)])
+        return a,b
+    @staticmethod
+    def efficiency(uG,ni,nj,rand_node):
+        a = nx.efficiency(uG,ni,nj)
+        b = nx.efficiency(uG,ni,rand_node)
+        return a,b
+    
     # bascially all the link prediction index is locally index, can be viewed as some kind of similarity
     
 
@@ -60,44 +106,26 @@ class index_global(object):
         # ni does not affect the value of index_global
         pass
     @staticmethod
-    def indegree(g,ni,nj,rand_node):
-        return g.in_degree(nj),g.in_degree(rand_node)
-    @staticmethod
-    def outdegree(g,ni,nj,rand_node):
-        return g.out_degree(nj),g.out_degree(rand_node)
-    @staticmethod
-    def degree(g,ni,nj,rand_node):
-        return g.degree(nj),g.degree(rand_node)
-    @staticmethod
-    def continuous_degree(g,ni,nj,rand_node):
-        ave = np.average(list(g.degree().values()))
-        return g.degree(nj)/ave,g.degree(rand_node)/ave
-    @staticmethod
-    def katz(g,ni,nj,rand_node):
-        katz = nx.katz_centrality_numpy(g)
-        ave = np.average(list(katz.values()))
-        return katz[nj]/ave,katz[rand_node]/ave
-    @staticmethod
-    def eigenvector(g,ni,nj,rand_node):
-        eigvec = nx.eigenvector_centrality_numpy(g)
-        ave = np.average(list(eigvec.values()))
-        return eigvec[nj]/ave,eigvec[rand_node]/ave
-    
-    @staticmethod
-    def kshell(g,ni,nj,rand_node):
-        # core number
-        kshell = nx.core_number(g)
-        # ave = np.average(list(kshell.values()))
-        return kshell[nj],kshell[rand_node]
+    def _h_index(indexList):
+        """
+        output h-index of the indexLis looks like [6,5,5,5,5,2,2,2,2,2,1,1,1,1,1,1]
+        """
+        HCounter = Counter(indexList)
+        CounterKeys = [i for i in HCounter]
+        CounterKeys = sorted(CounterKeys,reverse=True) 
+        
+        CounterValues = [HCounter[i] for i in CounterKeys]
+        #print(CounterKeys,CounterValues)
+        for index in range(0,len(CounterValues)):
+            if CounterKeys[index]<=sum(CounterValues[0:index+1]):
+                break
+        return CounterKeys[index]
     @staticmethod
     def _ink1sum(g,ni,nj):
         num = 0
         for neigh in g.predecessors(nj):
             num += g.in_degree(neigh)
         return num
-    @staticmethod
-    def ink1sum(g,ni,nj,rand_node):
-        return index_global._ink1sum(g,ni,nj),index_global._ink1sum(g,ni,rand_node)
     @staticmethod
     def _ink2sum(g,ni,nj):
         v2nodes = list(g.predecessors(nj))
@@ -108,8 +136,90 @@ class index_global(object):
             num+= g.in_degree(node)
         return num
     @staticmethod
+    def indegree(G,ni,nj,rand_node):
+        return G.in_degree(nj),G.in_degree(rand_node)
+    @staticmethod
+    def outdegree(G,ni,nj,rand_node):
+        return G.out_degree(nj),G.out_degree(rand_node)
+    @staticmethod
+    def degree(G,ni,nj,rand_node):
+        return G.degree(nj),G.degree(rand_node)
+    @staticmethod
+    def continuous_degree(G,ni,nj,rand_node):
+        deg = [len(nbrs) for n,nbrs in G.adj.items()]
+        ave = np.average(deg)
+        return G.degree(nj)/ave,G.degree(rand_node)/ave
+    
+    @staticmethod
+    def ink1sum(g,ni,nj,rand_node):
+        return index_global._ink1sum(g,ni,nj),index_global._ink1sum(g,ni,rand_node)
+
+    @staticmethod
     def ink2sum(g,ni,nj,rand_node):
         return index_global._ink2sum(g,ni,nj),index_global._ink2sum(g,ni,rand_node)
+    
+    @staticmethod #eigenvector
+    def katz(uG,ni,nj,rand_node):
+        katz = nx.katz_centrality_numpy(uG)
+        ave = np.average(list(katz.values()))
+        return katz[nj]/ave,katz[rand_node]/ave
+    @staticmethod #eigenvector
+    def eigenvector(uG,ni,nj,rand_node):
+        eigvec = nx.eigenvector_centrality_numpy(uG)
+        ave = np.average(list(eigvec.values()))
+        return eigvec[nj]/ave,eigvec[rand_node]/ave
+    @staticmethod #closeness
+    def closeness(uG,ni,nj,rand_node):
+        a = nx.closeness_centrality(uG,u=nj)
+        b = nx.closeness_centrality(uG,u=rand_node)
+        return a,b
+    @staticmethod
+    def information(uG,ni,nj,rand_node): #information centrality
+        d = nx.centrality.information_centrality(uG)
+        # ave is ok
+        return d[nj],d[rand_node]
+    @staticmethod
+    def betweeness_centrality(uG,ni,nj,rand_node):
+        d = nx.betweenness_centrality(uG)
+        return d[nj],d[rand_node]
+    @staticmethod
+    def current_flow_betweenness(uG,ni,nj,rand_node):
+        d = nx.current_flow_betweenness_centrality(uG)
+        return d[nj],d[rand_node]
+    @staticmethod
+    def communicability_betweenness(uG,ni,nj,rand_node):
+        d = nx.communicability_betweenness_centrality(uG)
+        return d[nj],d[rand_node]
+    @staticmethod
+    def harmonic(uG,ni,nj,rand_node):
+        d = nx.harmonic_centrality(uG,[nj,rand_node])
+        return d[nj],d[rand_node]
+    @staticmethod
+    def rich_club_coefficient(uG,ni,nj,rand_node):
+        d = nx.rich_club_coefficient(uG)
+        return d[nj],d[rand_node]
+    @staticmethod #link analysis
+    def pagerank(uG,ni,nj,rand_node):
+        d = nx.pagerank_numpy(uG)
+        return d[nj],d[rand_node]
+    @staticmethod
+    def h_index(uG,ni,nj,rand_node):
+        nj_list = []
+        rand_node_list = []
+        for neigh in uG.neighbors(nj):
+            nj_list.append(uG.degree(neigh))
+        for neigh in uG.neighbors(rand_node):
+            rand_node_list.append(uG.degree(neigh))
+        a = index_global._h_index(nj_list)
+        b = index_global._h_index(rand_node_list)
+        return a,b
+    @staticmethod
+    def kshell(uG,ni,nj,rand_node):
+        # core number
+        kshell = nx.core_number(uG)
+        # ave = np.average(list(kshell.values()))
+        return kshell[nj],kshell[rand_node]
+
 
     
 class EdgeList(object):
@@ -121,13 +231,46 @@ class EdgeList(object):
         self.records_random = {}
         # self.functions = {"degree":indegree,"distance":index_local.cutoff_distance}
         self.functions = None 
+        # a functions dictionary example is
         # {"degree":indegree,"distance":index_local.cutoff_distance,"distance":index_local.shortest_path_length}
         # ,"katz":index_global.katz, "k1sum":index_global.ink1sum}
+        self.un_functions = None
+        self.ig_functions = None
         
     def load_index_for_recorded(self,indices_str):
         # index_list = ["degree","distance",distance_cut,]
-        all_index = {"indegree":index_global.indegree,"degree":index_global.degree,"distance_cutoff":index_local.cutoff_distance,"distance":index_local.shortest_path_length,
-                        "katz":index_global.katz,"k1sum":index_global.ink1sum,"k2sum":index_global.ink2sum}
+        all_index = {"indegree":index_global.indegree,
+                     "degree":index_global.degree,
+                     "continuous_degree":index_global.continuous_degree,
+                     "k1sum":index_global.ink1sum,
+                     "k2sum":index_global.ink2sum,
+                     "katz_uG":index_global.katz,
+                     "eigenvector_uG":index_global.eigenvector,
+                     "closeness_uG":index_global.closeness,
+                     "information_uG":index_global.information,
+                     "betweeness_centrality_uG":index_global.betweeness_centrality,
+                     "current_flow_betweenness_uG":index_global.current_flow_betweenness,
+                     "communicability_betweenness_uG":index_global.communicability_betweenness,
+                     "harmonic_uG":index_global.harmonic,
+                     "rich_club_coefficient_uG":index_global.rich_club_coefficient,
+                     "pagerank_uG":index_global.pagerank,
+                     "h_index_uG":index_global.h_index,
+                     "kshell_uG":index_global.kshell,
+                     
+                     
+                    
+                     "distance_cutoff_uG":index_local.cutoff_distance,
+                     "distance_uG":index_local.shortest_path_length,
+                     "resource_allocation_uG":index_local.resource_allocation,
+                     "jaccard_coefficient_uG":index_local.jaccard_coefficient,
+                     "adamic_adar_index_uG":index_local.adamic_adar_index,
+                     "preferential_attachment_uG":index_local.preferential_attachment,
+                     "cn_soundarajan_hopcroft_uG":index_local.cn_soundarajan_hopcroft,
+                     "ra_index_soundarajan_hopcroft_uG":index_local.ra_index_soundarajan_hopcroft,
+                     "within_inter_cluster_uG":index_local.within_inter_cluster,
+                     "common_neighbor_centrality_uG":index_local.common_neighbor_centrality,
+                     "efficiency_uG":index_local.efficiency
+                     }
         self.functions = {}
         for s in indices_str:
             self.functions[s] = all_index[s]
@@ -319,8 +462,10 @@ class EdgeList(object):
         return li
     
     def evolve(self, max_edge_number = float("inf")):
-        g = nx.DiGraph()
-        print(type(g))
+        G = nx.DiGraph()
+        uG = nx.Graph()
+        g = igraph.Graph() # three kinds of graph
+        print(type(G))
         records = {}
         #records["time"] = []
         self.time_list = []
@@ -331,46 +476,87 @@ class EdgeList(object):
             records_random[name_func] = []
         print("EdgeList of "+ self.name + " has "+ str(N) +' edges')
         
-        for i in range(200):
-            edge = self.edge_list[i]
-            g.add_edge(edge[0],edge[1])
+        # do not need origin network
+        # for i in range(200):
+        #     edge = self.edge_list[i]
+        #     G.add_edge(edge[0],edge[1])
         #network evolve for a period
         num_edges_i = 0
         num_edges_ii = 0
         num_edges_iii = 0
         num_edges_iv = 0
-        for i in tqdm(range(200, N)):
+        for i in tqdm(range(N)):
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
             ni=edge[0]
             nj=edge[1]
             t = edge[2]
-            if ni in g.nodes() and nj in g.nodes():
-                rand_node = np.random.choice(g.nodes)
-                for name_func in self.functions:
+            if ni in G.nodes() and nj in G.nodes():
+                rand_node = np.random.choice([x for x in G.nodes if x != ni]) #random node but not ni
+                p_louvain = g.community_multilevel()
+                cluster_index = 0
+                for cluster in p_louvain:
+                    cluster_index += 1
+                    for node in cluster:
+                        uG.nodes[g.vs[node]["name"]]["community"] = cluster_index
+                
+                for name_func in self.functions: # record the directed graph indices
                     function = self.functions[name_func]
-                    function(g,edge[0],edge[1],rand_node)
-                    target_value,rand_value = function(g,edge[0],edge[1],rand_node)
-                    records[name_func].append(target_value)
-                    records_random[name_func].append(rand_value)
-                self.time_list.append(t)
-                g.add_edge(ni,nj) # record and then record the indeces
+                    if name_func[-2:] == "uG":
+                        function(uG,edge[0],edge[1],rand_node)
+                        target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
+                    elif name_func[-2:] == "g":
+                        function(g,edge[0],edge[1],rand_node)
+                        target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
+                    else:
+                        function(G,edge[0],edge[1],rand_node)
+                        target_value,rand_value = function(G,edge[0],edge[1],rand_node)
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
+                self.time_list.append(t) #record the indices and edge
+                
+                
+                G.add_edge(ni,nj) # build the new edge
+                uG.add_edge(ni,nj)
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_i +=1 #this is a type i edge, which is the edges that we consider most important 
-            elif ni not in g.nodes and nj in g.nodes:
-                g.add_edge(ni,nj) # ni is a new node, but nj is not a new node
+                
+            elif ni not in G.nodes and nj in G.nodes:
+                G.add_edge(ni,nj) # ni is a new node, but nj is not a new node
+                uG.add_edge(ni,nj)
+                g.add_vertices([ni])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_ii +=1
-            elif ni in g.nodes and nj not in g.nodes:
-                g.add_edge(ni,nj)
+            elif ni in G.nodes and nj not in G.nodes:
+                G.add_edge(ni,nj)
+                uG.add_edge(ni,nj)
+                g.add_vertices([nj])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_iii +=1 # ni is an old node, but nj is a new node
             else:
-                g.add_edge(ni,nj)
+                G.add_edge(ni,nj)
+                uG.add_edge(ni,nj)
+                g.add_vertices([ni,nj])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_iv +=1 # both ni, nj are new node
         
         self.records = records
         self.records_random = records_random
         #print(num_edges_i,num_edges_ii,num_edges_iii,num_edges_iv)
         print("type i edges is " + str(float(num_edges_i)/N) +" in record edges!")
-        return g
+        return G
     
     def output_records(self):
         data = pd.DataFrame.from_dict(self.records)
@@ -379,7 +565,7 @@ class EdgeList(object):
         # data.to_csv(self.name+"indeces")
         # data_random.to_csv(self.name+"random_indeces")
         # data_time.to_csv(self.name+"time")
-        writer = pd.ExcelWriter("./"+self.name+'_all.xlsx')
+        writer = pd.ExcelWriter("./experimental_results/"+self.name+'_all.xlsx')
         data.to_excel(writer,sheet_name = "real",index=False)
         data_random.to_excel(writer,sheet_name = "random",index=False)
         data_time.to_excel(writer,sheet_name ="time",index=False)
@@ -398,19 +584,21 @@ class EdgeList(object):
         data_real = pd.read_excel(file_name,sheet_name = "time")
         self.time_list = {k:list(v.values()) for k,v in data_real.to_dict().items()}  
         
-    def cutoff_records(self,normalize_indices,smooth_length):
+    def cut_records(self,normalize_indices,smooth_length):
         # just cut off 
         for index_name in normalize_indices:
             self.records[index_name] = (np.array(self.records[index_name]))[smooth_length-1:-smooth_length+1] #normalize and cut_off
             self.records_random[index_name] = (np.array(self.records_random[index_name]))[smooth_length-1:-smooth_length+1]
             #self.time_list = np.array(self.time_list)[smooth_length-1:-smooth_length+1]
         
-    def smooth_and_normalize_records(self,normalize_indices,smooth_length): #to check
+    def cut_and_smooth_normalize_records(self,normalize_indices,smooth_length):
+        # to check
         # do three things: smooth, normalize and cutoff
         weights = np.ones(smooth_length)/smooth_length
         for index_name in normalize_indices:
             x = self.records_random[index_name]
             x_ave = np.convolve(x,weights,'same') #smooth
+            
             self.records[index_name] = (np.array(self.records[index_name])/x_ave)[smooth_length-1:-smooth_length+1] #normalize and cut_off
             self.records_random[index_name] = (np.array(self.records_random[index_name])/x_ave)[smooth_length-1:-smooth_length+1]
             #self.time_list = np.array(self.time_list)[smooth_length-1:-smooth_length+1]
@@ -581,8 +769,37 @@ def test():
      
 def network_evolve(file_name):
     el = EdgeList() #build edgelist object
-    index4normalize = ["indegree","degree","katz","k1sum","k2sum"]
-    index4cutoff = ['distance','distance_cutoff']
+    index4normalize = ["indegree",
+                       "degree",
+                       "continuous_degree",
+                       "k1sum",
+                       "k2sum",
+                       "katz_uG",
+                       "eigenvector_uG",
+                       "closeness_uG",
+                       ## connected graph "information_uG",
+                       "betweeness_centrality_uG",
+                       ## connected graph "current_flow_betweenness_uG",
+                       #"communicability_betweenness_uG",
+                       "harmonic_uG",
+                       #float division by zero "rich_club_coefficient_uG",
+                       "pagerank_uG",
+                       "h_index_uG",
+                       "kshell_uG",
+                       
+                       
+                       "resource_allocation_uG",
+                       "jaccard_coefficient_uG",
+                       "adamic_adar_index_uG",
+                       "preferential_attachment_uG",
+                       "cn_soundarajan_hopcroft_uG",
+                       "ra_index_soundarajan_hopcroft_uG",
+                       "within_inter_cluster_uG",
+                       "common_neighbor_centrality_uG",
+                       "efficiency_uG"
+                       ]
+    
+    index4cutoff = ['distance_uG','distance_cutoff_uG']
     el.load_index_for_recorded(index4normalize+index4cutoff)
     # g = el.read_BA(1.0,500)
     # g = el.read_HK(1.0,0.05,1000)
@@ -590,12 +807,16 @@ def network_evolve(file_name):
     
     el.read_edgelist_file(file_name)
     #print(el.edge_list)
-    dg = el.evolve(max_edge_number = 5000)
-    el.smooth_and_normalize_records(normalize_indices=index4normalize,smooth_length=100)
-    el.cutoff_records(normalize_indices=index4cutoff,smooth_length=100)
+    dg = el.evolve(max_edge_number = 150)
+    smooth_length = 100 #cut records at begin and end with 100
+    el.output_records()
+     
+    # el.cut_records(normalize_indices=index4cutoff,smooth_length=50)
+    # el.cut_and_smooth_normalize_records(normalize_indices=index4normalize,smooth_length=50)
+    
     print(el.records)
     print(el.records_random)
-    el.output_records()
+
     sent_notifer()
     # el.load_records("BA_network_all.xlsx")
 
@@ -697,6 +918,9 @@ def test_numpy_c():
     
     print(np.c_[(x,y,z)])
     print(np.concatenate((x,y,z),axis=1 ))
+    pass
+
+def test_all_network():
     pass
 
 if __name__ == "__main__":
