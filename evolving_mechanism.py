@@ -807,7 +807,7 @@ def network_evolve(file_name):
     
     el.read_edgelist_file(file_name)
     #print(el.edge_list)
-    dg = el.evolve(max_edge_number = 150)
+    dg = el.evolve(max_edge_number = float("inf"))
     smooth_length = 100 #cut records at begin and end with 100
     el.output_records()
      
