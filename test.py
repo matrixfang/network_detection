@@ -125,13 +125,18 @@ def add_attribute_community():
         for node in cluster:
             G.nodes[node]["community"] = cluster_index
     
-
-    print(t1-t0,t2-t1,t3-t2)
-    print(igraph.summary(g))
-    a,b = nx.cn_soundarajan_hopcroft(G.to_undirected(), [(0, 2),(1,2)])
-    c,d = nx.cn_soundarajan_hopcroft(G.to_undirected(), [(0, 2),(1,2)])
-    # a,b = cn_soundarajan_hopcroft(G, ebunch=None, community='community')
-    print(a,b,c,d)
+    t0 =time.time()
+    #a = g.pagerank(vertices=[0,1])
+    #a = g.betweenness(vertices=[3,10])
+    a = g.eigenvector_centrality()
+    print("time is",time.time()-t0)
+    #print(a)
+    # print(t1-t0,t2-t1,t3-t2)
+    # print(igraph.summary(g))
+    # a,b = nx.cn_soundarajan_hopcroft(G.to_undirected(), [(0, 2),(1,2)])
+    # c,d = nx.cn_soundarajan_hopcroft(G.to_undirected(), [(0, 2),(1,2)])
+    # # a,b = cn_soundarajan_hopcroft(G, ebunch=None, community='community')
+    # print(a,b,c,d)
     # print(coms.communities)
     pass
 
@@ -237,9 +242,8 @@ def test_index():
 # test_networkx()
 
 
-# add_attribute_community()
 
-test_index()
+#test_index()
 
 def function_test():
     s = "dfasdfasdfa"
@@ -265,3 +269,36 @@ def h_index():
     pass
 
 
+
+from multiprocessing.pool import ThreadPool as Pool
+import os, time, random
+
+d = 2
+lis = []
+def long_time_task(name):
+    print('Run task %s (%s)...' % (name, os.getpid()))
+    start = time.time()
+    t = random.random() * 3
+    time.sleep(t)
+    end = time.time()
+    global lis
+    lis.append(t)
+    print('Task %s runs %0.2f seconds.' % (name, (end - start)))
+    return 1,d, d**2
+    
+
+
+    
+def test_time():
+    d = {'indegree': 0.024885177612304688, 'degree': 0.009556055068969727, 'continuous_degree': 0.25249171257019043, 'k1sum': 0.030849456787109375, 'k2sum': 0.04731035232543945, 'closeness_uG': 0.6424429416656494, 'harmonic_uG': 0.6728346347808838, 'pagerank_ig': 0.36860203742980957, 'h_index_uG': 0.10823535919189453, 'kshell_uG': 1.062082290649414, 'resource_allocation_uG': 0.10199880599975586, 'jaccard_coefficient_uG': 0.07625079154968262, 'adamic_adar_index_uG': 0.0676875114440918, 'preferential_attachment_uG': 0.020041227340698242, 'cn_soundarajan_hopcroft_uG': 0.07007884979248047, 'ra_index_soundarajan_hopcroft_uG': 0.025110483169555664, 'within_inter_cluster_uG': 0.02451324462890625, 'common_neighbor_centrality_uG': 0.09677505493164062, 'efficiency_uG': 0.03606915473937988, 'distance_uG': 0.0272519588470459, 'distance_cutoff_uG': 0.02762126922607422, 'community': 0.9620838165283203}
+    s = np.sum(list(d.values()))
+    for i in d:
+        d[i] = d[i]/s
+    # print(d)
+    
+    a = sorted(d.items(), key=lambda x: x[1], reverse=True)
+    print(a)  
+    import multiprocessing
+    cores = multiprocessing.cpu_count()
+    print(cores)
+test_time()
