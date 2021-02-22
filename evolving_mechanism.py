@@ -413,58 +413,121 @@ class EdgeList(object):
         #print(random.choice(list(g.nodes)))
         return g
     
-    def _evolve_test(self, max_edge_number = float("inf")):
-        g = nx.DiGraph()
-        print(type(g))
+    def evolve_pool(self, max_edge_number = float("inf")):
+        G = nx.DiGraph()
+        uG = nx.Graph()
+        g = igraph.Graph() # three kinds of graph
+        print(type(G))
         records = {}
         #records["time"] = []
         self.time_list = []
         records_random ={}
+        records_time = {}
         N = min(len(self.edge_list),max_edge_number)
+
+        for name_func in self.functions:
+            records[name_func] = []
+            records_random[name_func] = []
+            records_time[name_func] =0
+        records_time['community'] = 0
         print("EdgeList of "+ self.name + " has "+ str(N) +' edges')
         
-        li = []
-        
-        for i in range(200):
-            edge = self.edge_list[i]
-            g.add_edge(edge[0],edge[1])
+        # do not need origin network
+        # for i in range(200):
+        #     edge = self.edge_list[i]
+        #     G.add_edge(edge[0],edge[1])
         #network evolve for a period
         num_edges_i = 0
         num_edges_ii = 0
         num_edges_iii = 0
         num_edges_iv = 0
-        for i in tqdm(range(200, N)):
+            
+        #for i in tqdm(range(N)):
+        
+        for i in range(N):
+            if i%1000==0:
+                print(i)
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
             ni=edge[0]
             nj=edge[1]
             t = edge[2]
-            if ni in g.nodes() and nj in g.nodes():
-                rand_node = np.random.choice(g.nodes)
-                a,b = index_global.katz(g,edge[0],edge[1],rand_node)
-                li.append(b)
-                # for name_func in self.functions:
-                #     function = self.functions[name_func]
-                #     
-                #     records[name_func].append(function(g,edge[0],edge[1]))
-                #     records_random[name_func].append(function(g,edge[0],rand_node))
-                # self.time_list.append(t)
-                g.add_edge(ni,nj) # record and then record the indeces
+            
+            if ni in G.nodes() and nj in G.nodes():
+                rand_node = np.random.choice([x for x in G.nodes if x != ni]) #random node but not ni
+                t0= time.time()
+                p_louvain = g.community_multilevel()
+                cluster_index = 0
+                for cluster in p_louvain:
+                    cluster_index += 1
+                    for node in cluster:
+                        uG.nodes[g.vs[node]["name"]]["community"] = cluster_index
+                records_time['community'] += time.time()-t0
+                
+                
+                def calculate_function(name_func):
+                    
+                    function = self.functions[name_func]
+                    if name_func[-2:] == "uG":
+                        target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                    elif name_func[-2:] == "ig":
+                        target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                    else:
+                        target_value,rand_value = function(G,edge[0],edge[1],rand_node)
+                    
+                    return name_func,target_value,rand_value,t
+                
+                cores = multiprocessing.cpu_count()
+                p = Pool(cores)
+                # print(self.functions.keys())
+                data = p.map(calculate_function, list(self.functions.keys()))
+                p.close()
+                p.join()
+                for item in data:
+                    records[item[0]].append(item[1])
+                    records_random[item[0]].append(item[2])
+                    #records_time[item[0]]+=item[3]
+                self.time_list.append(t) #record the indices and edge
+                
+                
+                G.add_edge(ni,nj) # build the new edge
+                uG.add_edge(ni,nj)
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_i +=1 #this is a type i edge, which is the edges that we consider most important 
-            elif ni not in g.nodes and nj in g.nodes:
-                g.add_edge(ni,nj) # ni is a new node, but nj is not a new node
+                
+            elif ni not in G.nodes and nj in G.nodes:
+                G.add_edge(ni,nj) # ni is a new node, but nj is not a new node
+                uG.add_edge(ni,nj)
+                g.add_vertices([ni])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_ii +=1
-            elif ni in g.nodes and nj not in g.nodes:
-                g.add_edge(ni,nj)
+            elif ni in G.nodes and nj not in G.nodes:
+                G.add_edge(ni,nj)
+                uG.add_edge(ni,nj)
+                g.add_vertices([nj])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_iii +=1 # ni is an old node, but nj is a new node
             else:
-                g.add_edge(ni,nj)
+                G.add_edge(ni,nj)
+                uG.add_edge(ni,nj)
+                g.add_vertices([ni,nj])
+                s = g.vs.select(name = ni)[0].index
+                d = g.vs.select(name = nj)[0].index
+                g.add_edges([(s,d)])
                 num_edges_iv +=1 # both ni, nj are new node
         
-
+        self.records = records
+        self.records_random = records_random
         #print(num_edges_i,num_edges_ii,num_edges_iii,num_edges_iv)
         print("type i edges is " + str(float(num_edges_i)/N) +" in record edges!")
-        return li
+        print(records_time)
+        return G
     
     def evolve(self, max_edge_number = float("inf")):
         G = nx.DiGraph()
@@ -820,7 +883,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        ## connected graph "information_uG",
                        ## running time "betweeness_centrality_uG",
                        ## connected graph "current_flow_betweenness_uG",
-                       #"communicability_betweenness_uG",
+                       ## "communicability_betweenness_uG",
                        "harmonic_uG",
                        #float division by zero "rich_club_coefficient_uG",
                        "pagerank_ig",
@@ -849,7 +912,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
     print("total degelist number ", len(el.edge_list))
     
     #print(el.edge_list)
-    dg = el.evolve(max_edge_number = max_edge_number)
+    dg = el.evolve_pool(max_edge_number = max_edge_number)
     smooth_length = 100 #cut records at begin and end with 100
     el.output_records()
      
