@@ -11,6 +11,7 @@ import igraph
 from collections import Counter
 # from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool as Pool
+import multiprocessing
 import time
 
 def sent_notifer():
@@ -546,7 +547,8 @@ class EdgeList(object):
                     return name_func,target_value,rand_value,t
                 
                 
-                p = Pool(4)
+                cores = multiprocessing.cpu_count() 
+                p = Pool(cores)
                 # print(self.functions.keys())
                 data = p.map(calculate_function, list(self.functions.keys()))
                 p.close()
