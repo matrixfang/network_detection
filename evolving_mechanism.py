@@ -9,7 +9,9 @@ import os
 from tqdm import tqdm
 import igraph
 from collections import Counter
-
+# from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool as Pool
+import time
 
 def sent_notifer():
     command = "terminal-notifier -activate 'com.microsoft.VSCode' -sender 'com.microsoft.VSCode' -title 'python notifer' -message 'Your python program has finished!' "
@@ -199,9 +201,11 @@ class index_global(object):
         d = nx.rich_club_coefficient(uG)
         return d[nj],d[rand_node]
     @staticmethod #link analysis
-    def pagerank(uG,ni,nj,rand_node):
-        d = nx.pagerank_numpy(uG)
-        return d[nj],d[rand_node]
+    def pagerank(g,ni,nj,rand_node):
+        s = g.vs.select(name = ni)[0].index
+        t = g.vs.select(name = nj)[0].index
+        d = g.pagerank(vertices=[s,t])
+        return d[0],d[1]
     @staticmethod
     def h_index(uG,ni,nj,rand_node):
         nj_list = []
@@ -253,7 +257,7 @@ class EdgeList(object):
                      "communicability_betweenness_uG":index_global.communicability_betweenness,
                      "harmonic_uG":index_global.harmonic,
                      "rich_club_coefficient_uG":index_global.rich_club_coefficient,
-                     "pagerank_uG":index_global.pagerank,
+                     "pagerank_ig":index_global.pagerank,
                      "h_index_uG":index_global.h_index,
                      "kshell_uG":index_global.kshell,
                      
@@ -470,13 +474,14 @@ class EdgeList(object):
         #records["time"] = []
         self.time_list = []
         records_random ={}
+        records_time = {}
         N = min(len(self.edge_list),max_edge_number)
 
-    
-    
         for name_func in self.functions:
             records[name_func] = []
             records_random[name_func] = []
+            records_time[name_func] =0
+        records_time['community'] = 0
         print("EdgeList of "+ self.name + " has "+ str(N) +' edges')
         
         # do not need origin network
@@ -490,7 +495,10 @@ class EdgeList(object):
         num_edges_iv = 0
             
         #for i in tqdm(range(N)):
+        
         for i in range(N):
+            if i%1000==0:
+                print(i)
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
             ni=edge[0]
@@ -499,28 +507,54 @@ class EdgeList(object):
             
             if ni in G.nodes() and nj in G.nodes():
                 rand_node = np.random.choice([x for x in G.nodes if x != ni]) #random node but not ni
+                t0= time.time()
                 p_louvain = g.community_multilevel()
                 cluster_index = 0
                 for cluster in p_louvain:
                     cluster_index += 1
                     for node in cluster:
                         uG.nodes[g.vs[node]["name"]]["community"] = cluster_index
-                        
-
-                for name_func in self.functions: # record the directed graph indices
+                records_time['community'] += time.time()-t0
+                
+                
+                # for name_func in self.functions: # record the directed graph indices
+                #     function = self.functions[name_func]
+                #     if name_func[-2:] == "uG":
+                #         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                #         records[name_func].append(target_value)
+                #         records_random[name_func].append(rand_value)
+                #     elif name_func[-2:] == "g":
+                #         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                #         records[name_func].append(target_value)
+                #         records_random[name_func].append(rand_value)
+                #     else:
+                #         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
+                #         records[name_func].append(target_value)
+                #         records_random[name_func].append(rand_value)
+                # self.time_list.append(t) #record the indices and edge
+                
+                def calculate_function(name_func):
+                    t0 = time.time()
                     function = self.functions[name_func]
                     if name_func[-2:] == "uG":
                         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
-                        records[name_func].append(target_value)
-                        records_random[name_func].append(rand_value)
-                    elif name_func[-2:] == "g":
+                    elif name_func[-2:] == "ig":
                         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
-                        records[name_func].append(target_value)
-                        records_random[name_func].append(rand_value)
                     else:
                         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
-                        records[name_func].append(target_value)
-                        records_random[name_func].append(rand_value)
+                    t = time.time()-t0
+                    return name_func,target_value,rand_value,t
+                
+                
+                p = Pool(4)
+                # print(self.functions.keys())
+                data = p.map(calculate_function, list(self.functions.keys()))
+                p.close()
+                p.join()
+                for item in data:
+                    records[item[0]].append(item[1])
+                    records_random[item[0]].append(item[2])
+                    records_time[item[0]]+=item[3]
                 self.time_list.append(t) #record the indices and edge
                 
                 
@@ -560,6 +594,7 @@ class EdgeList(object):
         self.records_random = records_random
         #print(num_edges_i,num_edges_ii,num_edges_iii,num_edges_iv)
         print("type i edges is " + str(float(num_edges_i)/N) +" in record edges!")
+        print(records_time)
         return G
     
     def output_records(self):
@@ -771,7 +806,7 @@ def test():
     print(g.degree)
     # print(li)
      
-def network_evolve(file_name):
+def network_evolve(file_name,max_edge_number=float('inf')):
     el = EdgeList() #build edgelist object
     index4normalize = ["indegree",
                        "degree",
@@ -779,15 +814,15 @@ def network_evolve(file_name):
                        "k1sum",
                        "k2sum",
                        "katz_uG",
-                       "eigenvector_uG",
+                       #running time"eigenvector_uG",
                        "closeness_uG",
                        ## connected graph "information_uG",
-                       "betweeness_centrality_uG",
+                       ## running time "betweeness_centrality_uG",
                        ## connected graph "current_flow_betweenness_uG",
                        #"communicability_betweenness_uG",
                        "harmonic_uG",
                        #float division by zero "rich_club_coefficient_uG",
-                       "pagerank_uG",
+                       "pagerank_ig",
                        "h_index_uG",
                        "kshell_uG",
                        
@@ -813,15 +848,12 @@ def network_evolve(file_name):
     print("total degelist number ", len(el.edge_list))
     
     #print(el.edge_list)
-    dg = el.evolve(max_edge_number = float("inf"))
+    dg = el.evolve(max_edge_number = max_edge_number)
     smooth_length = 100 #cut records at begin and end with 100
     el.output_records()
      
     # el.cut_records(normalize_indices=index4cutoff,smooth_length=50)
     # el.cut_and_smooth_normalize_records(normalize_indices=index4normalize,smooth_length=50)
-    
-    print(el.records)
-    print(el.records_random)
 
     sent_notifer()
     # el.load_records("BA_network_all.xlsx")
@@ -932,7 +964,9 @@ def test_all_network():
 if __name__ == "__main__":
     
     file_name = './real_evolving_networks/sx-mathoverflow-a2q.txt'
-    network_evolve(file_name)
+    t0 =time.time()
+    network_evolve(file_name,max_edge_number=1000)
+    print("test time ", time.time()-t0)
     # file_name = './hepth_all.xlsx'
     # analysis_index(file_name)
     
