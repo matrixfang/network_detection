@@ -518,46 +518,45 @@ class EdgeList(object):
                 records_time['community'] += time.time()-t0
                 
                 
-                # for name_func in self.functions: # record the directed graph indices
-                #     function = self.functions[name_func]
-                #     if name_func[-2:] == "uG":
-                #         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
-                #         records[name_func].append(target_value)
-                #         records_random[name_func].append(rand_value)
-                #     elif name_func[-2:] == "g":
-                #         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
-                #         records[name_func].append(target_value)
-                #         records_random[name_func].append(rand_value)
-                #     else:
-                #         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
-                #         records[name_func].append(target_value)
-                #         records_random[name_func].append(rand_value)
-                # self.time_list.append(t) #record the indices and edge
-                
-                def calculate_function(name_func):
-                    t0 = time.time()
+                for name_func in self.functions: # record the directed graph indices
                     function = self.functions[name_func]
                     if name_func[-2:] == "uG":
                         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
                     elif name_func[-2:] == "ig":
                         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
                     else:
                         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
-                    t = time.time()-t0
-                    return name_func,target_value,rand_value,t
-                
-                
-                cores = multiprocessing.cpu_count() 
-                p = Pool(cores)
-                # print(self.functions.keys())
-                data = p.map(calculate_function, list(self.functions.keys()))
-                p.close()
-                p.join()
-                for item in data:
-                    records[item[0]].append(item[1])
-                    records_random[item[0]].append(item[2])
-                    records_time[item[0]]+=item[3]
+                        records[name_func].append(target_value)
+                        records_random[name_func].append(rand_value)
                 self.time_list.append(t) #record the indices and edge
+                
+                # def calculate_function(name_func):
+                #     t0 = time.time()
+                #     function = self.functions[name_func]
+                #     if name_func[-2:] == "uG":
+                #         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                #     elif name_func[-2:] == "ig":
+                #         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                #     else:
+                #         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
+                #     t = time.time()-t0
+                #     return name_func,target_value,rand_value,t
+                
+                # cores = multiprocessing.cpu_count() 
+                # p = Pool(cores)
+                # # print(self.functions.keys())
+                # data = p.map(calculate_function, list(self.functions.keys()))
+                # p.close()
+                # p.join()
+                # for item in data:
+                #     records[item[0]].append(item[1])
+                #     records_random[item[0]].append(item[2])
+                #     records_time[item[0]]+=item[3]
+                # self.time_list.append(t) #record the indices and edge
                 
                 
                 G.add_edge(ni,nj) # build the new edge
