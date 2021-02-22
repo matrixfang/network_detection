@@ -471,6 +471,9 @@ class EdgeList(object):
         self.time_list = []
         records_random ={}
         N = min(len(self.edge_list),max_edge_number)
+
+    
+    
         for name_func in self.functions:
             records[name_func] = []
             records_random[name_func] = []
@@ -485,12 +488,15 @@ class EdgeList(object):
         num_edges_ii = 0
         num_edges_iii = 0
         num_edges_iv = 0
-        for i in tqdm(range(N)):
+            
+        #for i in tqdm(range(N)):
+        for i in range(N):
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
             ni=edge[0]
             nj=edge[1]
             t = edge[2]
+            
             if ni in G.nodes() and nj in G.nodes():
                 rand_node = np.random.choice([x for x in G.nodes if x != ni]) #random node but not ni
                 p_louvain = g.community_multilevel()
@@ -499,21 +505,19 @@ class EdgeList(object):
                     cluster_index += 1
                     for node in cluster:
                         uG.nodes[g.vs[node]["name"]]["community"] = cluster_index
-                
+                        
+
                 for name_func in self.functions: # record the directed graph indices
                     function = self.functions[name_func]
                     if name_func[-2:] == "uG":
-                        function(uG,edge[0],edge[1],rand_node)
                         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
                         records[name_func].append(target_value)
                         records_random[name_func].append(rand_value)
                     elif name_func[-2:] == "g":
-                        function(g,edge[0],edge[1],rand_node)
                         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
                         records[name_func].append(target_value)
                         records_random[name_func].append(rand_value)
                     else:
-                        function(G,edge[0],edge[1],rand_node)
                         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
                         records[name_func].append(target_value)
                         records_random[name_func].append(rand_value)
@@ -806,6 +810,8 @@ def network_evolve(file_name):
     # g = el.read_HK(1.0,0.05,1000)
     
     el.read_edgelist_file(file_name)
+    print("total degelist number ", len(el.edge_list))
+    
     #print(el.edge_list)
     dg = el.evolve(max_edge_number = float("inf"))
     smooth_length = 100 #cut records at begin and end with 100
