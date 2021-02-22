@@ -966,7 +966,7 @@ if __name__ == "__main__":
     
     file_name = './real_evolving_networks/sx-mathoverflow-a2q.txt'
     t0 =time.time()
-    network_evolve(file_name,max_edge_number=1000)
+    network_evolve(file_name)
     print("test time ", time.time()-t0)
     # file_name = './hepth_all.xlsx'
     # analysis_index(file_name)
