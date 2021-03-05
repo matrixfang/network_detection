@@ -5,7 +5,8 @@ from evolving_mechanism import *
 from cdlib import algorithms
 
 import igraph
-
+import entropy as ep
+import igraph as ig
 
 
 def test_container():
@@ -193,18 +194,65 @@ def test_networkx():
 
 def test_index():
     el = EdgeList()
-    G = el.read_BA(1.0,100)
+    G = el.read_BA(1.0,10)
+    
     # a,b= nx.resource_allocation_index(g.to_undirected(),[(0,1),(1,2)])#done
     # a,b= nx.jaccard_coefficient(g.to_undirected(),[(0,1),(1,2)]) #OK
     # a,b=nx.adamic_adar_index(g.to_undirected(),[(0,1),(1,2)]) #ok
     # preferential_attachment
     # common_neighbor_centrality
+
+    # print(g.vs)
+    # g.add_edges(list(G.edges()))
     
-    # g = nx.Graph()
-    # g.add_edge(1,1)
+
+    
     
     nx.info(G)
     uG = G.to_undirected()
+    uG.add_edge(104,105)
+    
+    g = igraph.Graph()
+    g.add_vertices(list(uG.nodes()))
+    for e in uG.edges():
+        # print(ver,ver.index,ver["name"],type(ver["name"]))
+        s = g.vs.select(name = e[0])[0].index
+        d = g.vs.select(name = e[1])[0].index
+        g.add_edges([(s,d)])
+        pass 
+     
+    #communicability_exp
+    c = nx.communicability_exp(uG)
+    print(c[0][1], c[1][0])
+    
+    # s = g.vs.select(name = 9)[0].index
+    # d = g.vs.select(name = 104)[0].index
+    # L = np.linalg.pinv((g.laplacian()))
+    # print(L[s,d])
+    
+    # print(g.personalized_pagerank(reset_vertices=2))
+    # print(g.personalized_pagerank(reset_vertices=1))
+    # print(g.pagerank())
+    # print(nx.pagerank(uG,max_iter=1,tol=0.1))
+
+    # n = len(g.laplacian())
+    # mfi = np.linalg.inv(np.identity(n)+np.array(g.laplacian()))
+    # print(mfi[9,10],mfi[1,0])
+    
+    
+    
+
+    # print(uG.nodes)
+    # L = nx.laplacian_matrix(uG)
+    # print(L)
+    # L_pinv = np.linalg.pinv(L.toarray())
+    # print(L_pinv)
+    # print(list(uG.nodes()).index(104))
+    
+    # loca = index_local()
+    # a, b =loca.average_commute_time(uG, 8,9,104)
+    # print(a,b)
+    
     # a = nx.closeness_centrality(uG,u=0)
     # d = nx.betweenness_centrality(uG)
     # d = nx.current_flow_betweenness_centrality(uG)
@@ -218,9 +266,9 @@ def test_index():
     # d = nx.closeness_centrality(uG)
     #uG.add_edge(102,103)
    # d = nx.current_flow_betweenness_centrality(uG)
-    a = index_global._h_index([])
+    # a = index_global._h_index([])
     
-    print(a)
+    # print(a)
     
    
     
@@ -237,7 +285,7 @@ def test_index():
     
     pass
 
-# test_index()
+test_index()
 
 # test_networkx()
 
@@ -301,4 +349,36 @@ def test_time():
     import multiprocessing
     cores = multiprocessing.cpu_count()
     print(cores)
-test_time()
+
+
+def output_text():
+    filename = "./experimental_results/output.txt"
+    with open(filename, 'a') as f:
+        print(var, file=f)
+    pass
+
+def np_test():
+    pass
+    # el = EdgeList()
+    # file_name = "./experimental_results/hepph_all.xlsx"
+    # el.load_records(file_name)
+    # el.cut_and_smooth_normalize_records(normalize_indices=["degree"],smooth_length=300)
+    # print(el.records["degree"])
+    # print(el.records["degree"][0:1000])
+    
+    # m = 6259
+    # slice_num = int(m/10)
+    # for d in range(10):
+    #     if d != 9:
+    #         print(d,d*slice_num,(d+1)*slice_num)
+    #     else:
+    #         print(d,d*slice_num,m-1)
+        
+def test_slice():
+    nums = [1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5]
+    print(ep.slice(nums,4))
+    #print(list(range(0,9)))
+    
+
+    
+    

@@ -37,15 +37,17 @@ def slice(xs,m):
     for k in range(0, m):
         dx.append(float(ls[k * npers]))
     dx.append(float(ls[len(ls)-1]+1.0))
-    #print(dx)
-    #print(len(dx))
+    # print(dx)
+    # print(len(dx))
 
     def rep(v):
-        for i in range(0, len(dx)):
+        for i in range(0, len(dx)-1):
             min = dx[i]
             max = dx[i + 1]
-            if v>=min and v< max:
+            if v>=min and v< max: #不确定是slice是否对
                 return i
+        return len(dx)-1
+        
     return np.fromiter(map(rep, xs),dtype = int)
 
 def cmiddcut(x,y,z,slice_num=20):
@@ -104,7 +106,8 @@ def casual_entropy(i,j,K,data):
     if len(K) ==0:
         return casual_entropy_empty(i,j,K,data)
     
-    slice_num = int(np.power(len(x),1.0/2)/2)
+    #slice_num = int(np.power(len(x),1.0/2)/2)
+    slice_num = int(np.power(len(x),0.4))
       
     if x.dtype =='float64':
         x = slice(x,slice_num)
@@ -117,6 +120,7 @@ def casual_entropy(i,j,K,data):
         y_vec = np.array([[s] for s in y ]) 
     else:
         y_vec = np.array([[s] for s in y ]) 
+        print("index j "+j +"is discrete")
     
     
     z_all = []    
@@ -188,7 +192,6 @@ def casual_entropy_empty(i,j,K,data):
     
         
 
-    
     x_clone = np.copy(x_vec)
     ns = 200
     ci = 0.95
@@ -214,7 +217,7 @@ def casual_entropy_empty(i,j,K,data):
     useful_result = if_large_zero * v
     multi = abs(v-ave)/np.std(outputs)
     
-    n=200
+    n=200  #check if statistical significant
     std_modified = np.sqrt((n-1)/n)*np.std(outputs)
     (statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=1)
     
