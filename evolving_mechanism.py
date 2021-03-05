@@ -1230,7 +1230,7 @@ if __name__ == "__main__":
     
     file_name = './real_evolving_networks/hepph.txt'
     # t0 =time.time()
-    network_evolve(file_name,max_edge_number=200)
+    network_evolve(file_name,max_edge_number=10000)
     # print("test time ", time.time()-t0)
     # el =EdgeList()
     # el.load_records()
