@@ -144,8 +144,10 @@ class index_local(object):
         ni_index = g_nodes.index(ni)
         nj_index = g_nodes.index(nj)
         rand_index = g_nodes.index(rand_node)
-        a = l[ni_index,nj_index]/np.sqrt(l[ni_index,ni_index]*l[nj_index,nj_index])
-        b = l[ni_index,rand_index]/np.sqrt(l[ni_index,ni_index]*l[rand_index,rand_index])
+        a = l[ni_index,nj_index]/np.sqrt(abs(l[ni_index,ni_index]*l[nj_index,nj_index]))
+        b = l[ni_index,rand_index]/np.sqrt(abs(l[ni_index,ni_index]*l[rand_index,rand_index]))
+        d = l[nj_index,nj_index]
+        c = l[rand_index,rand_index]
         self.laplacian_matrix_pinv  = None
         return a,b
     
@@ -654,8 +656,8 @@ class EdgeList(object):
             
         
         
-        for i in tqdm(range(2*N)):
-        #for i in range(N):
+        #for i in tqdm(range(2*N)):
+        for i in range(N):
             
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
