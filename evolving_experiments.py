@@ -67,5 +67,5 @@ def network_evolve(file_name,max_edge_number=float('inf')):
 
 file_name = './real_evolving_networks/hepph.txt'
 file_name = "./real_evolving_networks/hepth.txt"
-    # t0 =time.time()
+
 network_evolve(file_name,max_edge_number=10000)

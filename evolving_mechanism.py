@@ -127,7 +127,15 @@ class index_local(object):
         return a, b
 
     def average_commute_time(self,g, ni,nj, rand_node):
-        l = np.linalg.pinv(g.laplacian())
+        lap = np.array(g.laplacian())
+        try:
+            l = sp.linalg.pinv(lap)
+            
+        except np.linalg.LinAlgError:
+            lap = g.laplacian()
+            print("matrix is lap")
+            print(True in np.isnan(lap))
+        
         self.laplacian_matrix_pinv  = l 
         ni_index = g.vs.select(name = ni)[0].index
         nj_index = g.vs.select(name = nj)[0].index
@@ -346,8 +354,6 @@ class EdgeList(object):
                      "kshell_uG":index_global.kshell,
                      
                      
-
-
                      "shortest_path_length_uG":index_local.shortest_path_length,
                      "distance_cutoff_uG":index_local.cutoff_distance,
                      "resource_allocation_uG":index_local.resource_allocation,

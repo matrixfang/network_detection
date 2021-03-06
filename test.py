@@ -222,8 +222,13 @@ def test_index():
         pass 
      
     #communicability_exp
-    c = nx.communicability_exp(uG)
-    print(c[0][1], c[1][0])
+    #c = nx.communicability_exp(uG)
+    # print(c[0][1], c[1][0])
+    
+    #laplacian
+    lap = g.laplacian()
+    print(True in np.isnan(np.array(lap)))
+    
     
     # s = g.vs.select(name = 9)[0].index
     # d = g.vs.select(name = 104)[0].index
