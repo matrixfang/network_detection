@@ -126,28 +126,25 @@ class index_local(object):
         b = len(list(nx.common_neighbors(uG,ni,nj)))/(uG.degree(ni)*uG.degree(rand_node))  
         return a, b
 
-    def average_commute_time(self,uG, ni,nj, rand_node):
-        l =np.linalg.pinv(nx.laplacian_matrix(uG).toarray())
-        self.laplacian_matrix_pinv =  l
-        g_nodes = list(uG.nodes()) 
-        ni_index = g_nodes.index(ni)
-        nj_index = g_nodes.index(nj)
-        rand_index = g_nodes.index(rand_node)
-        
+    def average_commute_time(self,g, ni,nj, rand_node):
+        l = np.linalg.pinv(g.laplacian())
+        self.laplacian_matrix_pinv  = l 
+        ni_index = g.vs.select(name = ni)[0].index
+        nj_index = g.vs.select(name = nj)[0].index
+        rand_index = g.vs.select(name = rand_node)[0].index
+
         a = l[ni_index,ni_index]+l[nj_index,nj_index]-2*l[ni_index,nj_index]
         b = l[ni_index,rand_index]+l[nj_index,rand_index]-2*l[ni_index,rand_index]
         return a,b
 
-    def cos(self,uG, ni,nj,rand_node):
+    def cos(self,g,ni,nj,rand_node):
         l = self.laplacian_matrix_pinv 
-        g_nodes = list(uG.nodes())
-        ni_index = g_nodes.index(ni)
-        nj_index = g_nodes.index(nj)
-        rand_index = g_nodes.index(rand_node)
+        ni_index = g.vs.select(name = ni)[0].index
+        nj_index = g.vs.select(name = nj)[0].index
+        rand_index = g.vs.select(name = rand_node)[0].index
+        
         a = l[ni_index,nj_index]/np.sqrt(abs(l[ni_index,ni_index]*l[nj_index,nj_index]))
         b = l[ni_index,rand_index]/np.sqrt(abs(l[ni_index,ni_index]*l[rand_index,rand_index]))
-        d = l[nj_index,nj_index]
-        c = l[rand_index,rand_index]
         self.laplacian_matrix_pinv  = None
         return a,b
     
@@ -366,8 +363,8 @@ class EdgeList(object):
                      "HPI_uG":index_local.HPI,
                      "HDI_uG":index_local.HDI,
                      "LHN1_uG":index_local.LHN1,
-                     "average_commute_time_uG":loca.average_commute_time,
-                     "cos_uG":loca.cos,
+                     "average_commute_time_ig":loca.average_commute_time,
+                     "cos_ig":loca.cos,
                      "random_walk_with_restart_ig":index_local.random_walk_with_restart,
                      "matrix_forest_index_ig":index_local.matrix_forest_index,
                      "efficiency_uG":index_local.efficiency
@@ -656,8 +653,8 @@ class EdgeList(object):
             
         
         
-        #for i in tqdm(range(2*N)):
-        for i in range(N):
+        for i in tqdm(range(2*N)):
+        #for i in range(N):
             
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
@@ -1019,8 +1016,8 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "HPI_uG",
                        "HDI_uG",
                        "LHN1_uG",
-                       "average_commute_time_uG",
-                       "cos_uG",
+                       "average_commute_time_ig",
+                       "cos_ig",
                        "random_walk_with_restart_ig",
                        "matrix_forest_index_ig",
                        
