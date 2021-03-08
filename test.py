@@ -178,6 +178,11 @@ def test_networkx():
         d = g.vs.select(name = e[1])[0].index
         g.add_edges([(s,d)])
         pass
+    
+    uG.nodes[1]["community"] =1
+    uG_c = uG.copy()
+    uG.nodes[1]["community"] = 2
+    print(uG_c.nodes[1])
         
     
 
@@ -220,6 +225,10 @@ def test_index():
         d = g.vs.select(name = e[1])[0].index
         g.add_edges([(s,d)])
         pass 
+    
+    #eigenvector
+    print(g.evcent())
+    print(list(nx.eigenvector_centrality(uG).values()))
      
     #communicability_exp
     #c = nx.communicability_exp(uG)
@@ -229,9 +238,11 @@ def test_index():
     # lap = g.laplacian()
     # print(True in np.isnan(np.array(lap)))
     
+    
+    # eigenvector
     #hits
-    print(nx.hits(uG)[0])
-    print(nx.hits(uG)[1])
+    # print(nx.hits(uG)[0])
+    # print(nx.hits(uG)[1])
     
     
     # s = g.vs.select(name = 9)[0].index
@@ -294,8 +305,8 @@ def test_index():
     
     pass
 
-test_index()
 
+test_index()
 # test_networkx()
 
 

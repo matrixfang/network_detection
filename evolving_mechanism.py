@@ -254,10 +254,12 @@ class index_global(object):
         ave = np.average(list(katz.values()))
         return katz[nj]/ave,katz[rand_node]/ave
     @staticmethod #eigenvector
-    def eigenvector(uG,ni,nj,rand_node):
-        eigvec = nx.eigenvector_centrality_numpy(uG)
-        ave = np.average(list(eigvec.values()))
-        return eigvec[nj]/ave,eigvec[rand_node]/ave
+    def eigenvector(g,ni,nj,rand_node):
+        eigen = g.evcent()
+        nj_index = g.vs.select(name = nj)[0].index
+        rand_index = g.vs.select(name = rand_node)[0].index
+    
+        return eigen[nj_index],eigen[rand_index]
     @staticmethod #closeness
     def closeness(uG,ni,nj,rand_node):
         a = nx.closeness_centrality(uG,u=nj)
@@ -293,8 +295,8 @@ class index_global(object):
     
     @staticmethod #link analysis
     def pagerank(g,ni,nj,rand_node):
-        s = g.vs.select(name = ni)[0].index
-        t = g.vs.select(name = nj)[0].index
+        s = g.vs.select(name = nj)[0].index
+        t = g.vs.select(name = rand_node)[0].index
         d = g.pagerank(vertices=[s,t])
         return d[0],d[1]
     @staticmethod
@@ -345,7 +347,7 @@ class EdgeList(object):
                      "k1sum_uG":index_global.ink1sum,
                      "k2sum":index_global.ink2sum,
                      "katz_uG":index_global.katz,
-                     "eigenvector_uG":index_global.eigenvector,
+                     "eigenvector_ig":index_global.eigenvector,
                      "closeness_uG":index_global.closeness,
                      "information_uG":index_global.information,
                      "betweeness_centrality_uG":index_global.betweeness_centrality,
@@ -548,6 +550,12 @@ class EdgeList(object):
             
         
         pool = mp.Pool()
+        q = mp.Queue()
+        def pool_func(func):
+            def f(q,i,name_func,G,ni,nj,rand_node):
+                a,b = func(G,ni,nj,rand_node)
+                q.put((i,name_func,a,b))
+            return f
         
         for i in tqdm(range(N)):
         #for i in range(2*N):
@@ -575,12 +583,15 @@ class EdgeList(object):
                     function = self.functions[name_func]
                     t1 = time.time()
                     if name_func[-2:] == "uG":
+                        uG_copy = uG.copy()
                         #target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
-                        pool.apply_async(function,(uG,edge[0],edge[1],rand_node))
+                        pool.apply_async(function,(uG_copy,edge[0],edge[1],rand_node))
                     elif name_func[-2:] == "ig":
-                        pool.apply_async(function,(g,edge[0],edge[1],rand_node)) 
+                        g_copy = g.copy()
+                        pool.apply_async(function,(g_copy,edge[0],edge[1],rand_node)) 
                     else:
-                        pool.apply_async(function,(G,edge[0],edge[1],rand_node)) 
+                        G_copy = G.copy()
+                        pool.apply_async(function,(G_copy,edge[0],edge[1],rand_node)) 
                     
                  
                     target_value, rand_value = 0,1
@@ -642,6 +653,7 @@ class EdgeList(object):
         print("type iv edges is " + str(num_edges_iv/N) +" in record edges!")
         
         print(sorted(records_time.items(), key = lambda kv:(kv[1], kv[0]))) #打印所有方法使用时间
+        print(q.get())
         return G
       
     def evolve(self, max_edge_number = float("inf")):
