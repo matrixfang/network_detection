@@ -8,7 +8,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "k1sum_uG",
                        "k2sum",
                        "katz_uG",
-                       #running time"eigenvector_uG",
+                       "eigenvector_uG",
                        "closeness_uG",
                        ## connected graph "information_uG",
                        ## running time "betweeness_centrality_uG",
@@ -37,10 +37,10 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "HPI_uG",
                        "HDI_uG",
                        "LHN1_uG",
-                       # time"average_commute_time_ig",
+                       "average_commute_time_ig",
                        #time"cos_ig",
                        "random_walk_with_restart_ig",
-                       #time"matrix_forest_index_ig",
+                       "matrix_forest_index_ig",
                        "efficiency_uG"
                        ]
     
