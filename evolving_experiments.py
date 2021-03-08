@@ -14,12 +14,13 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        ## running time "betweeness_centrality_uG",
                        ## connected graph "current_flow_betweenness_uG",
                        #"communicability_betweenness_uG",
-                       "communicability_exp_uG",
+                       #time "communicability_exp_uG",
                        
                        "harmonic_uG",
                        "pagerank_ig",
                        "h_index_uG",
                        "kshell_uG",
+                       #time "hits_uG",
                        
                        
                        #"shortest_path_length_uG",
@@ -36,10 +37,10 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "HPI_uG",
                        "HDI_uG",
                        "LHN1_uG",
-                       "average_commute_time_ig",
-                       "cos_ig",
+                       # time"average_commute_time_ig",
+                       #time"cos_ig",
                        "random_walk_with_restart_ig",
-                       "matrix_forest_index_ig",
+                       #time"matrix_forest_index_ig",
                        "efficiency_uG"
                        ]
     
@@ -68,4 +69,6 @@ def network_evolve(file_name,max_edge_number=float('inf')):
 file_name = './real_evolving_networks/hepph.txt'
 file_name = "./real_evolving_networks/hepth.txt"
 
-network_evolve(file_name,max_edge_number=10000)
+t0 = time.time()
+network_evolve(file_name,max_edge_number=1000)
+print("network evolve time is ",time.time()-t0)

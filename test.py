@@ -226,8 +226,12 @@ def test_index():
     # print(c[0][1], c[1][0])
     
     #laplacian
-    lap = g.laplacian()
-    print(True in np.isnan(np.array(lap)))
+    # lap = g.laplacian()
+    # print(True in np.isnan(np.array(lap)))
+    
+    #hits
+    print(nx.hits(uG)[0])
+    print(nx.hits(uG)[1])
     
     
     # s = g.vs.select(name = 9)[0].index

@@ -11,7 +11,7 @@ import igraph
 from collections import Counter
 # from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool as Pool
-import multiprocessing
+import multiprocessing as mp
 import time
 import scipy as sp
 
@@ -168,7 +168,7 @@ class index_local(object):
     @staticmethod
     def matrix_forest_index(g, ni,nj,rand_node):
         n = len(g.vs)
-        mfi = np.linalg.inv(np.identity(n)+np.array(g.laplacian()))
+        mfi = np.linalg.pinv(np.identity(n)+np.array(g.laplacian()))
         ni_index = g.vs.select(name = ni)[0].index
         nj_index = g.vs.select(name = nj)[0].index
         rand_index = g.vs.select(name = rand_node)[0].index
@@ -314,6 +314,10 @@ class index_global(object):
         kshell = nx.core_number(uG)
         # ave = np.average(list(kshell.values()))
         return kshell[nj],kshell[rand_node]
+    @staticmethod
+    def hits(uG,ni,nj,rand_node):
+        d = nx.hits(uG,tol=0.1)[0]
+        return d[nj],d[rand_node]
 
 
     
@@ -352,6 +356,7 @@ class EdgeList(object):
                      "pagerank_ig":index_global.pagerank,
                      "h_index_uG":index_global.h_index,
                      "kshell_uG":index_global.kshell,
+                     "hits_uG": index_global.hits,
                      
                      
                      "shortest_path_length_uG":index_local.shortest_path_length,
@@ -541,11 +546,12 @@ class EdgeList(object):
         num_edges_iii = 0
         num_edges_iv = 0
             
-        #for i in tqdm(range(N)):
         
-        for i in range(N):
-            if i%1000==0:
-                print(i)
+        pool = mp.Pool()
+        
+        for i in tqdm(range(N)):
+        #for i in range(2*N):
+            
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
             ni=edge[0]
@@ -563,31 +569,28 @@ class EdgeList(object):
                         uG.nodes[g.vs[node]["name"]]["community"] = cluster_index
                 records_time['community'] += time.time()-t0
                 
+                num_edges  =  num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 
-                def calculate_function(name_func):
-                    
+                for name_func in self.functions: # record the directed graph indices
                     function = self.functions[name_func]
+                    t1 = time.time()
                     if name_func[-2:] == "uG":
-                        target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                        #target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
+                        pool.apply_async(function,(uG,edge[0],edge[1],rand_node))
                     elif name_func[-2:] == "ig":
-                        target_value,rand_value = function(g,edge[0],edge[1],rand_node)
+                        pool.apply_async(function,(g,edge[0],edge[1],rand_node)) 
                     else:
-                        target_value,rand_value = function(G,edge[0],edge[1],rand_node)
+                        pool.apply_async(function,(G,edge[0],edge[1],rand_node)) 
                     
-                    return name_func,target_value,rand_value,t
-                
-                cores = multiprocessing.cpu_count()
-                p = Pool(cores)
-                # print(self.functions.keys())
-                data = p.map(calculate_function, list(self.functions.keys()))
-                p.close()
-                p.join()
-                for item in data:
-                    records[item[0]].append(item[1])
-                    records_random[item[0]].append(item[2])
-                    #records_time[item[0]]+=item[3]
+                 
+                    target_value, rand_value = 0,1
+                    records[name_func].append(target_value)
+                    records_random[name_func].append(rand_value)
+                    t2 = time.time()
+                    records_time[name_func] += t2-t1 
+                self.records["time"] = num_edges - uG.nodes[nj]["time"]
+                self.records_random["time"] = num_edges - uG.nodes[rand_node]["time"]
                 self.time_list.append(t) #record the indices and edge
-                
                 
                 G.add_edge(ni,nj) # build the new edge
                 uG.add_edge(ni,nj)
@@ -597,20 +600,24 @@ class EdgeList(object):
                 num_edges_i +=1 #this is a type i edge, which is the edges that we consider most important 
                 
             elif ni not in G.nodes and nj in G.nodes:
+                
                 G.add_edge(ni,nj) # ni is a new node, but nj is not a new node
                 uG.add_edge(ni,nj)
                 g.add_vertices([ni])
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
+                uG.nodes[ni]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 num_edges_ii +=1
             elif ni in G.nodes and nj not in G.nodes:
+            
                 G.add_edge(ni,nj)
                 uG.add_edge(ni,nj)
                 g.add_vertices([nj])
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
+                uG.nodes[nj]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 num_edges_iii +=1 # ni is an old node, but nj is a new node
             else:
                 G.add_edge(ni,nj)
@@ -619,15 +626,24 @@ class EdgeList(object):
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
+                uG.nodes[ni]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
+                uG.nodes[nj]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 num_edges_iv +=1 # both ni, nj are new node
-        
+            if num_edges_i >N :
+                break
+        pool.close()
+        pool.join()
         self.records = records
         self.records_random = records_random
         #print(num_edges_i,num_edges_ii,num_edges_iii,num_edges_iv)
-        print("type i edges is " + str(float(num_edges_i)/N) +" in record edges!")
-        print(records_time)
+        print("type i edges is " + str(num_edges_i/N) +" in record edges!")
+        print("type ii edges is " + str(num_edges_ii/N) +" in record edges!") 
+        print("type iii edges is " + str(num_edges_iii/N) +" in record edges!")
+        print("type iv edges is " + str(num_edges_iv/N) +" in record edges!")
+        
+        print(sorted(records_time.items(), key = lambda kv:(kv[1], kv[0]))) #打印所有方法使用时间
         return G
-    
+      
     def evolve(self, max_edge_number = float("inf")):
         G = nx.DiGraph()
         uG = nx.Graph()
@@ -659,8 +675,8 @@ class EdgeList(object):
             
         
         
-        #for i in tqdm(range(2*N)):
-        for i in range(2*N):
+        for i in tqdm(range(N)):
+        #for i in range(2*N):
             
             # print("we are recording the edge number ", i)
             edge = self.edge_list[i]
@@ -683,6 +699,7 @@ class EdgeList(object):
                 
                 for name_func in self.functions: # record the directed graph indices
                     function = self.functions[name_func]
+                    t1 = time.time()
                     if name_func[-2:] == "uG":
                         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
                         records[name_func].append(target_value)
@@ -695,34 +712,11 @@ class EdgeList(object):
                         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
                         records[name_func].append(target_value)
                         records_random[name_func].append(rand_value)
+                    t2 = time.time()
+                    records_time[name_func] += t2-t1 
                 self.records["time"] = num_edges - uG.nodes[nj]["time"]
                 self.records_random["time"] = num_edges - uG.nodes[rand_node]["time"]
                 self.time_list.append(t) #record the indices and edge
-                
-                # def calculate_function(name_func):
-                #     t0 = time.time()
-                #     function = self.functions[name_func]
-                #     if name_func[-2:] == "uG":
-                #         target_value,rand_value = function(uG,edge[0],edge[1],rand_node)
-                #     elif name_func[-2:] == "ig":
-                #         target_value,rand_value = function(g,edge[0],edge[1],rand_node)
-                #     else:
-                #         target_value,rand_value = function(G,edge[0],edge[1],rand_node)
-                #     t = time.time()-t0
-                #     return name_func,target_value,rand_value,t
-                
-                # cores = multiprocessing.cpu_count() 
-                # p = Pool(cores)
-                # # print(self.functions.keys())
-                # data = p.map(calculate_function, list(self.functions.keys()))
-                # p.close()
-                # p.join()
-                # for item in data:
-                #     records[item[0]].append(item[1])
-                #     records_random[item[0]].append(item[2])
-                #     records_time[item[0]]+=item[3]
-                # self.time_list.append(t) #record the indices and edge
-                
                 
                 G.add_edge(ni,nj) # build the new edge
                 uG.add_edge(ni,nj)
@@ -742,7 +736,7 @@ class EdgeList(object):
                 uG.nodes[ni]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 num_edges_ii +=1
             elif ni in G.nodes and nj not in G.nodes:
-                
+            
                 G.add_edge(ni,nj)
                 uG.add_edge(ni,nj)
                 g.add_vertices([nj])
@@ -752,7 +746,6 @@ class EdgeList(object):
                 uG.nodes[nj]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 num_edges_iii +=1 # ni is an old node, but nj is a new node
             else:
-
                 G.add_edge(ni,nj)
                 uG.add_edge(ni,nj)
                 g.add_vertices([ni,nj])
@@ -767,8 +760,12 @@ class EdgeList(object):
         self.records = records
         self.records_random = records_random
         #print(num_edges_i,num_edges_ii,num_edges_iii,num_edges_iv)
-        print("type i edges is " + str(float(num_edges_i)/N) +" in record edges!")
-        print(records_time)
+        print("type i edges is " + str(num_edges_i/N) +" in record edges!")
+        print("type ii edges is " + str(num_edges_ii/N) +" in record edges!") 
+        print("type iii edges is " + str(num_edges_iii/N) +" in record edges!")
+        print("type iv edges is " + str(num_edges_iv/N) +" in record edges!")
+        
+        print(sorted(records_time.items(), key = lambda kv:(kv[1], kv[0]))) #打印所有方法使用时间
         return G
     
     def output_records(self):
@@ -961,7 +958,7 @@ def first_plot2():
         
         for k in ks:
             ents[k].append(ep.midcut(if_rand_cut, degree_cut,slice_num=k))
-
+            
         ent0.append(ep.midc(if_rand_cut, degree_cut,k=100))
         #ent5.append(ep.cmidcutd(if_rand_cut,degree_cut,distances_cut))
         #print(a.all(),b.all(),c.all())
@@ -1168,7 +1165,7 @@ if __name__ == "__main__":
     
     file_name = './real_evolving_networks/hepph.txt'
     # t0 =time.time()
-    network_evolve(file_name,max_edge_number=10000)
+    network_evolve(file_name,max_edge_number=300)
     # print("test time ", time.time()-t0)
     # el =EdgeList()
     # el.load_records()
