@@ -20,7 +20,8 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "pagerank_ig",
                        "h_index_uG",
                        "kshell_uG",
-                       #time "hits_uG",
+                       "hub_score_ig",
+                       #"hits_uG",
                        
                        
                        #"shortest_path_length_uG",

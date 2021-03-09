@@ -320,6 +320,13 @@ class index_global(object):
     def hits(uG,ni,nj,rand_node):
         d = nx.hits(uG,tol=0.1)[0]
         return d[nj],d[rand_node]
+    @staticmethod
+    def hub_score(g,ni,nj,rand_node):
+        nj_index = g.vs.select(name = nj)[0].index
+        rand_index = g.vs.select(name = rand_node)[0].index
+        d = g.hub_score()
+        return d[nj_index],d[rand_index]
+        
 
 
     
@@ -359,6 +366,7 @@ class EdgeList(object):
                      "h_index_uG":index_global.h_index,
                      "kshell_uG":index_global.kshell,
                      "hits_uG": index_global.hits,
+                     "hub_score_ig":index_global.hub_score,
                      
                      
                      "shortest_path_length_uG":index_local.shortest_path_length,
