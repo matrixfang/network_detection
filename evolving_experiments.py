@@ -67,8 +67,18 @@ def network_evolve(file_name,max_edge_number=float('inf')):
     sent_notifer()
     # el.load_records("BA_network_all.xlsx")
 
-file_name = './real_evolving_networks/hepph.txt'
-file_name = "./real_evolving_networks/hepth.txt"
+#file_name = './real_evolving_networks/hepph.txt'
+#file_name = "./real_evolving_networks/hepth.txt"
+
+# file_name = "./real_evolving_networks/sx-mathoverflow-a2q.txt"
+# file_name = "./real_evolving_networks/sx-mathoverflow-c2a.txt"
+
+# file_name = "./real_evolving_networks/sx-mathoverflow-c2q.txt"
+# file_name = "./real_evolving_networks/wiki-talk-temporal.txt"
+
+# file_name = "./real_evolving_networks/CollegeMsg.txt"
+
+file_name = "./real_evolving_networks/"
 
 t0 = time.time()
 network_evolve(file_name,max_edge_number=10000)

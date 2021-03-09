@@ -395,8 +395,8 @@ class EdgeList(object):
             self.functions[s] = all_index[s]
             
     def read_edgelist_file(self,file_name):
-        # return self.__read_soc_edgelist_file(file_name)
-        return self.__read_mathoverflow_file(file_name)
+        return self.__read_soc_edgelist_file(file_name)
+        #return self.__read_mathoverflow_file(file_name)
     
     def __read_mathoverflow_file(self,file_name):
         self.name = file_name.split('/')[-1].split(".")[-2]
@@ -422,7 +422,7 @@ class EdgeList(object):
         legal_edge_num = len(original_edge_list)
         erase_p = float(erase_num)/(erase_num + legal_edge_num)
         self.edge_list = sorted(original_edge_list, key=lambda x:x[2])
-        print('in file load, we erase %f' %(erase_p) )
+        print('in file load, we erase %f self loop links' %(erase_p) )
         return self.edge_list
 
         
