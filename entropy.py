@@ -2,6 +2,8 @@ from npeet import entropy_estimators as ee
 import numpy as np
 from collections import Counter
 from scipy import stats
+
+
 def discrete_entropy(dxs):
     dic = dict(Counter(dxs))
     sum = np.sum(list(dic.values()))
@@ -49,6 +51,30 @@ def slice(xs,m):
         return len(dx)-1
         
     return np.fromiter(map(rep, xs),dtype = int)
+
+def slice_by_random(xs,x_random,m):
+    #devide into m spaces
+    #按照x_random 的分布切分 xs 使其变成离散值
+    ls = sorted(x_random)
+    npers = int(len(x_random)/m)
+    dx = []
+    for k in range(0, m):
+        dx.append(float(ls[k * npers]))
+    dx.append(float(ls[len(ls)-1]+1.0))
+    # print(dx)
+    # print(len(dx))
+
+    def rep(v):
+        for i in range(0, len(dx)-1):
+            min = dx[i]
+            max = dx[i + 1]
+            if v>=min and v< max: #不确定是slice是否对
+                return i
+        return len(dx)-1
+        
+    return np.fromiter(map(rep, xs),dtype = int)
+
+
 
 def cmiddcut(x,y,z,slice_num=20):
     #under condition z
@@ -107,7 +133,7 @@ def casual_entropy(i,j,K,data):
         return casual_entropy_empty(i,j,K,data)
     
     #slice_num = int(np.power(len(x),1.0/2)/2)
-    slice_num = int(np.power(len(x),0.4))
+    slice_num = int(np.power(len(x),0.4)/2)
       
     if x.dtype =='float64':
         x = slice(x,slice_num)
@@ -140,7 +166,7 @@ def casual_entropy(i,j,K,data):
     ns = 200
     ci = 0.95
     outputs = []
-    outputs2 = []
+    #outputs2 = []
     for i in range(ns):
         np.random.shuffle(x_clone)
         outputs.append(ee.cmidd(x_clone,y_vec,z_combine,base=2))
@@ -164,19 +190,22 @@ def casual_entropy(i,j,K,data):
     std_modified = np.sqrt((n-1)/n)*np.std(outputs)
     multi = abs(v-ave)/np.std(outputs)
     
-    (statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=1)
+    #(statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=2,equal_val=False)
+    # res = stats.ttest_1samp(np.array(outputs),[ave,0])
+    statistic = 1
     
-    print("function: casual_entropy, the length of data",len(x),"the slice number is", slice_num, "useful value is ",useful_result,"multi sigma is ", multi)
-    print("statistic, pvalue",statistic,pvalue)  
     
-    return useful_result, v,ave,(ci0,ci1),if_large_zero,abs(statistic)*if_large_zero
+    print("index "+j+" function: casual_entropy, the length of data",len(x),"the slice number is", slice_num, "useful value is ",useful_result,"multi sigma is ", multi)
+   # print("statistic, pvalue",statistic,pvalue)  
+    
+    return useful_result,v,ave,(ci0,ci1),if_large_zero,abs(statistic)*if_large_zero
     
 def casual_entropy_empty(i,j,K,data):    
 
     x = data[i]
     y = data[j]
     
-    slice_num = int(np.power(len(x),1.0/2)/2)
+    slice_num = int(np.power(len(x),0.4)/2)
  
     if x.dtype =='float64':
         x = slice(x,slice_num)
@@ -219,10 +248,11 @@ def casual_entropy_empty(i,j,K,data):
     
     n=200  #check if statistical significant
     std_modified = np.sqrt((n-1)/n)*np.std(outputs)
-    (statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=1)
+    # (statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=1)
+    statistic =1
     
-    print("function: casual_entropy, the length of data",len(x),"the slice number is", slice_num, "useful value is ",useful_result,"multi sigma is ", multi) 
-    print("statistic, pvalue",statistic,pvalue)  
+    print("index "+j+" function: casual_entropy, the length of data",len(x),"the slice number is", slice_num, "useful value is ",useful_result,"multi sigma is ", multi) 
+    # print("statistic, pvalue",statistic,pvalue)  
     
     return useful_result, v,ave,(ci0,ci1),if_large_zero,abs(statistic)*if_large_zero
  

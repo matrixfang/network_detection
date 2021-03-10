@@ -342,8 +342,8 @@ class EdgeList(object):
         # a functions dictionary example is
         # {"degree":indegree,"distance":index_local.cutoff_distance,"distance":index_local.shortest_path_length}
         # ,"katz":index_global.katz, "k1sum":index_global.ink1sum}
-        self.un_functions = None
-        self.ig_functions = None
+        
+
         
     def load_index_for_recorded(self,indices_str):
         # index_list = ["degree","distance",distance_cut,]
@@ -817,8 +817,8 @@ class EdgeList(object):
     def cut_records(self,normalize_indices,smooth_length):
         # just cut off 
         for index_name in normalize_indices:
-            self.records[index_name] = (np.array(self.records[index_name]))[smooth_length-1:-smooth_length+1] #normalize and cut_off
-            self.records_random[index_name] = (np.array(self.records_random[index_name]))[smooth_length-1:-smooth_length+1]  #add to avoid zero
+            self.records[index_name] = np.array(self.records[index_name])[smooth_length-1:] #normalize and cut_off
+            self.records_random[index_name] = np.array(self.records_random[index_name])[smooth_length-1:]  #add to avoid zero
             #self.time_list = np.array(self.time_list)[smooth_length-1:-smooth_length+1]
     
     def add_small_number_avoid_divide_by_zero(self,avoid_zero_indices,epsilon):
@@ -833,11 +833,17 @@ class EdgeList(object):
         weights = np.ones(smooth_length)/smooth_length
         for index_name in normalize_indices:
             x = np.array(self.records_random[index_name]) 
-            x_ave = np.convolve(x,weights,'same') #smooth
+            #x_ave = np.convolve(x,weights,'same') #smooth
+            #self.records[index_name] = ((np.array(self.records[index_name]))/x_ave)[smooth_length-1:-smooth_length+1] #normalize and cut_off and add 1 to avoid zero
+            #self.records_random[index_name] = (np.array(self.records_random[index_name])/x_ave)[smooth_length-1:-smooth_length+1] 
             
-            self.records[index_name] = ((np.array(self.records[index_name]))/x_ave)[smooth_length-1:-smooth_length+1] #normalize and cut_off and add 1 to avoid zero
-            self.records_random[index_name] = (np.array(self.records_random[index_name])/x_ave)[smooth_length-1:-smooth_length+1] 
             #self.time_list = np.array(self.time_list)[smooth_length-1:-smooth_length+1]
+            
+            x_ave = np.convolve(x,weights,'valid') #smooth
+            self.records[index_name] = (np.array(self.records[index_name][smooth_length-1:])/x_ave) #normalize and cut_off and add 1 to avoid zero
+            self.records_random[index_name] = (np.array(self.records_random[index_name][smooth_length-1:])/x_ave)
+            #self.records_random[index_name] = (np.array(self.records_random[index_name])/x_ave)[smooth_length-1:-smooth_length+1] 
+
     
 
 def merge(indices,indices_random):
@@ -850,7 +856,32 @@ def merge(indices,indices_random):
         if_random.append(1)
         
     return np.array(index_merge), np.array(if_random)
-                                           
+  
+
+def get_random_records(index,mix_data):
+    #mix_data 中必须有 "if_rand"
+    #从数据中重新获得所有平均随机选择的部分
+    index_random_records =[]
+    for i in range(len(mix_data[index])):
+        if mix_data["if_rand"][i] == 1:
+            index_random_records.append(mix_data[index][i])
+            #只要有就是
+    return index_random_records
+    
+def mix2discrete_data(mix_data,m):
+    #el is edgelist, mixdata是index:array 的字典, m 是要切分成多少片
+    data_discrete = {}
+    for index in mix_data:
+        if mix_data[index][0] =="float64":
+            records_random = get_random_records(index,mix_data)
+            data_discrete[index] = ep.slice_by_random(mix_data[index],records_random,m)
+        else:
+            data_discrete[index] = mix_data[index] #不要忘了把本身就是离散值的指标加回去
+            
+    
+    return data_discrete
+
+
 def first_plot():
     el = EdgeList()
     file_name = './BA_network_all.xlsx'
@@ -1004,164 +1035,6 @@ def test():
     # print(li)
      
 
-def analysis_index(file_name):
-    el = EdgeList()
-    
-    el.load_records(file_name)
-    index4normalize = ["indegree",
-                       "degree",
-                       "continuous_degree",
-                       "k1sum",
-                       "k2sum",
-                       "katz_uG",
-                       #running time"eigenvector_uG",
-                       "closeness_uG",
-                       ## connected graph "information_uG",
-                       ## running time "betweeness_centrality_uG",
-                       ## connected graph "current_flow_betweenness_uG",
-                       ## "communicability_betweenness_uG",
-                       "harmonic_uG",
-                       #float division by zero "rich_club_coefficient_uG",
-                       "pagerank_ig",
-                       "h_index_uG",
-                       "kshell_uG",
-                       
-                       #"resource_allocation_uG",
-                       #"jaccard_coefficient_uG",
-                       #"adamic_adar_index_uG",
-                       "preferential_attachment_uG",
-                       #"cn_soundarajan_hopcroft_uG",
-                       #"ra_index_soundarajan_hopcroft_uG",
-                       #"within_inter_cluster_uG",
-                       "common_neighbor_centrality_uG",
-                       "efficiency_uG"
-                       ]
-    
-    index4cutoff = ['distance_uG','distance_cutoff_uG']
-    index4addepsilon = ["resource_allocation_uG",
-                    "jaccard_coefficient_uG","adamic_adar_index_uG","cn_soundarajan_hopcroft_uG",
-                   "ra_index_soundarajan_hopcroft_uG","within_inter_cluster_uG"]
-    
-    el.cut_records(normalize_indices=index4cutoff,smooth_length=300)
-    el.add_small_number_avoid_divide_by_zero(avoid_zero_indices=index4addepsilon,epsilon=1)    
-    el.cut_and_smooth_normalize_records(normalize_indices=index4normalize+index4addepsilon,smooth_length=300)
-    
-
-    total_slice_num = 5
-    ordered_slice_num = 4 #1,2,3,4
-    index_min =0
-    index_max =1
-    length = len(el.records["degree"])
-    
-    print(type(el.records["distance_uG"][0]))
-    print(type(el.records["distance_cutoff_uG"][1]))
-    
-    if ordered_slice_num !=4:
-        index_min = ordered_slice_num*int(length/total_slice_num)
-        index_max = (ordered_slice_num+1)*int(length/total_slice_num)
-    else:
-        index_min = ordered_slice_num*int(length/total_slice_num)
-        index_max = length - 1
-        
-        
-    
-    
-    index_all_list = index4normalize+index4cutoff
-    index_data ={}
-    degree,if_rand = merge(el.records["degree"][index_min:index_max],el.records_random["degree"][index_min:index_max])
-    
-    index_data["if_rand"] = if_rand
-    for index in index_all_list:
-        index_records, if_rand =merge(el.records[index][index_min:index_max],el.records_random[index][index_min:index_max])
-        index_data["if_rand"] = if_rand
-        index_data[index] = index_records
-        
-        
-    
-    # degree,if_rand = merge(el.records["degree"],el.records_random["degree"])
-    # distance, if_rand = merge(el.records["distance"],el.records_random["distance"])
-    # indegree, if_rand = merge(el.records["indegree"],el.records_random["indegree"])
-    # distance_cutoff, if_rand = merge(el.records["distance_cutoff"],el.records_random["distance_cutoff"])
-    # katz, if_rand = merge(el.records["katz"],el.records_random["katz"])
-    # k1sum, if_rand = merge(el.records["k1sum"],el.records_random["k1sum"])
-    # k2sum, if_rand = merge(el.records["k2sum"],el.records_random["k2sum"])
-
-    
-    
-    # index_data = {"if_rand":if_rand,"degree":degree,"indegree":indegree,"distance_cutoff":distance_cutoff,
-    #               "distance":distance,"katz":katz,"k1sum":k1sum,"k2sum":k2sum}
-    # index_nodes = ["degree"]
-    # index_all = set(["degree","distance_cutoff","distance","katz","indegree","k1sum","k2sum"])
-    index_all = set(index_all_list)
-    
-    def aggregative_discovery():
-        K = set([]) 
-        x = 100
-        p = None
-        
-        while x > 0:
-            if p != None:
-                K.add(p)
-            print("K is", K)
-            max_x = 0
-            max_j = None
-            index_check = index_all.difference(K)
-            print("index for check is ",index_check)
-            for j in index_check:
-                v,_,_,_,_,multi = ep.casual_entropy("if_rand",j,K,index_data)
-                if v>max_x:
-                    max_x = v
-                    max_j = j
-                else:
-                    # print(j+" useful value",v)
-                    pass
-            x = max_x
-            p = max_j
-        return K
-    
-    def aggregative_discovery_by_multi():
-        K = set([]) 
-        x = 100
-        p = None
-        
-        while x > 0:
-            if p != None:
-                K.add(p)
-            print("K is", K)
-            max_multi = 0
-            max_j = None
-            index_check = index_all.difference(K)
-            print("index for check is ",index_check)
-            for j in index_check:
-                v,_,_,_,_,multi = ep.casual_entropy("if_rand",j,K,index_data)
-                if multi>max_multi:
-                    max_multi = multi
-                    max_j = j
-                else:
-                    #print(j+" useful value",v)
-                    pass
-            x = max_multi
-            p = max_j
-        return K 
-    
-    def progressive_removal(K):
-        for j in K:
-            L = K.copy()
-            L.difference(set([j]))
-            v,_,_,_,_,_ = ep.casual_entropy("if_rand",j,L,index_data)
-            if v <=0:
-                K.difference(j)
-        return K
-    
-    K  = aggregative_discovery()
-    print(file_name+" 's final K is",progressive_removal(K))
-
-    
-    sent_notifer()
-    # useful_value,v,ave,(ci0,ci1),if_large_zero, multi =ep.casual_entropy('if_rand','distance',set(['indegree','degree']),index_data)
-    # print(useful_value,v,ave,(ci0,ci1),if_large_zero,multi)
-    pass
-
 
 def test_casual_entropy():
     el = EdgeList()
@@ -1185,7 +1058,7 @@ if __name__ == "__main__":
     
     file_name = './real_evolving_networks/hepph.txt'
     # t0 =time.time()
-    network_evolve(file_name,max_edge_number=300)
+    # network_evolve(file_name,max_edge_number=300)
     # print("test time ", time.time()-t0)
     # el =EdgeList()
     # el.load_records()

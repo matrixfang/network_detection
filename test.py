@@ -306,7 +306,7 @@ def test_index():
     pass
 
 
-test_index()
+
 # test_networkx()
 
 
@@ -400,5 +400,78 @@ def test_slice():
     #print(list(range(0,9)))
     
 
+def test_convolve():
+    res = np.convolve(np.array([1,2,3,4,5,6,7,8,9]),np.array([1/3,1/3,1/3]),mode="valid")
+    res2 = np.convolve(np.array([1,2,3,4,5,6,7,8,9]),np.array([1/3,1/3,1/3]),mode="same")
+    print(res)
+    print(res2)
+    file_name = "./experimental_results/hepth_all.xlsx"
+    el = EdgeList()
+    
+    el.load_records(file_name)
+    index4normalize = ["indegree",
+                       "degree",
+                       "continuous_degree",
+                       "k1sum_uG",
+                       "k2sum",
+                       "katz_uG",
+                       "eigenvector_ig",
+                       "closeness_uG",
+                       ## connected graph "information_uG",
+                       ## running time "betweeness_centrality_uG",
+                       ## connected graph "current_flow_betweenness_uG",
+                       ## "communicability_betweenness_uG",
+                       "harmonic_uG",
+                       #float division by zero "rich_club_coefficient_uG",
+                       "pagerank_ig",
+                       "h_index_uG",
+                       "kshell_uG",
+                       
+                       #"resource_allocation_uG",
+                       #"jaccard_coefficient_uG",
+                       #"adamic_adar_index_uG",
+                       "preferential_attachment_uG",
+                       #"cn_soundarajan_hopcroft_uG",
+                       #"ra_index_soundarajan_hopcroft_uG",
+                       #"within_inter_cluster_uG",
+                       "common_neighbor_centrality_uG",
+                       "salton_uG",
+                       "sorensen_uG",
+                       "HPI_uG",
+                       "HDI_uG",
+                       "LHN1_uG",
+                       "random_walk_with_restart_ig",
+                       "efficiency_uG"
+                       ]
+    
+    index4cutoff = ['shortest_path_length_uG','distance_cutoff_uG']
+    index4addepsilon = ["resource_allocation_uG",
+                    "jaccard_coefficient_uG","adamic_adar_index_uG","cn_soundarajan_hopcroft_uG",
+                   "ra_index_soundarajan_hopcroft_uG","within_inter_cluster_uG"]
+    
+    smooth_length = 400
+    weights = np.ones(smooth_length)/smooth_length
+    x = np.array(el.records_random["random_walk_with_restart_ig"])
+    y = np.array(el.records["random_walk_with_restart_ig"])
+    x_ave = np.convolve(x,weights,'valid') #smooth
+    y_ave = np.convolve(y,weights,"valid")
+    z_ave = np.convolve(x,weights,"same") #比较 same 和 valid的异同, 看平均信息是否有差别
+    #x_ave = list(range(400))+x_ave
+
+    
+    plt.figure()
+    plt.plot(x_ave[0:1000],label="x")
+    plt.plot(z_ave[smooth_length-1:smooth_length-1+1000],label= "z")
+    plt.legend()
+    plt.show()
+    #结论是差个 smooth_length/2, 最终选择 valid, 也即 n时刻的平均值取的是之前smooth_length长度的平均值
     
     
+    pass
+    
+def print_test():
+    name = "lalala"
+    d = {2:3,5:4}
+    print(name +" Hello stackoverflow!", d,file=open("./experimental_results/output.txt", "a"))
+    
+print_test()

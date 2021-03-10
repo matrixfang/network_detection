@@ -1,2 +1,1 @@
-    # lap = g.laplacian()
-    # print(True in np.isnan(np.array(lap)))
+analysis_index(file_name)
