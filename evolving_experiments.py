@@ -210,7 +210,7 @@ def after_analysis_index(file_name):
     pass
 
     
-def analysis_index(el):
+def analysis_index(el,total_slice_num,ordered_slice_num):
     index4normalize = ["indegree",
                        "degree",
                        "continuous_degree",
@@ -384,7 +384,9 @@ def analysis_index(el):
 # file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
 # t0 = time.time()
 el = network_evolve(file_name,max_edge_number=15000)
-analysis_index(el)
+analysis_index(el,3,0)
+analysis_index(el,3,1)
+analysis_index(el,3,2)
 # print("network evolve time is ",time.time()-t0)
 
 
