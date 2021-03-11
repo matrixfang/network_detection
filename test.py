@@ -227,8 +227,8 @@ def test_index():
         pass 
     
     #eigenvector
-    print(g.evcent())
-    print(list(nx.eigenvector_centrality(uG).values()))
+    # print(g.evcent())
+    # print(list(nx.eigenvector_centrality(uG).values()))
      
     #communicability_exp
     #c = nx.communicability_exp(uG)
@@ -250,8 +250,9 @@ def test_index():
     # L = np.linalg.pinv((g.laplacian()))
     # print(L[s,d])
     
-    # print(g.personalized_pagerank(reset_vertices=2))
-    # print(g.personalized_pagerank(reset_vertices=1))
+    #pagerank
+    print(g.personalized_pagerank(reset_vertices=4)[1])
+    print(g.personalized_pagerank(reset_vertices=1)[4])
     # print(g.pagerank())
     # print(nx.pagerank(uG,max_iter=1,tol=0.1))
 
@@ -474,4 +475,4 @@ def print_test():
     d = {2:3,5:4}
     print(name +" Hello stackoverflow!", d,file=open("./experimental_results/output.txt", "a"))
     
-print_test()
+test_index()

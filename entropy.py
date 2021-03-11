@@ -189,7 +189,8 @@ def casual_entropy(i,j,K,data):
     n =200
     useful_result = if_large_zero * v
     std_modified = np.sqrt((n-1)/n)*np.std(outputs)
-    multi = abs(v-ave)/np.std(outputs)
+    # multi = abs(v-ave)/np.std(outputs)
+    multi = 0
     
     #(statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=2,equal_val=False)
     # res = stats.ttest_1samp(np.array(outputs),[ave,0])
@@ -246,10 +247,11 @@ def casual_entropy_empty(i,j,K,data):
         if_large_zero = False
     
     useful_result = if_large_zero * v
-    multi = abs(v-ave)/np.std(outputs)
+    # multi = abs(v-ave)/np.std(outputs)
+    multi = 0
     
     n=200  #check if statistical significant
-    std_modified = np.sqrt((n-1)/n)*np.std(outputs)
+    # std_modified = np.sqrt((n-1)/n)*np.std(outputs)
     # (statistic, pvalue) = stats.ttest_ind_from_stats(mean1=ave, std1=std_modified, nobs1=200, mean2=v, std2=0, nobs2=1)
     statistic =1
     

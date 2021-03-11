@@ -29,6 +29,7 @@ def sent_notifer():
 class index_local(object):
     def __init__(self):
         self.laplacian_matrix_pinv = None
+        self.pagerank = (0,0,0,0)
         pass
     def pesodoinv_laplacian(self):
         pass
@@ -156,15 +157,28 @@ class index_local(object):
         self.laplacian_matrix_pinv  = None
         return a,b
     
-    @staticmethod
-    def random_walk_with_restart(g,ni,nj,rand_node):
+    def random_walk_with_restart(self,g,ni,nj,rand_node):
         ni_index = g.vs.select(name = ni)[0].index
         nj_index = g.vs.select(name = nj)[0].index
         rand_index = g.vs.select(name = rand_node)[0].index
-        a = g.personalized_pagerank(reset_vertices=ni_index)[nj_index] + g.personalized_pagerank(reset_vertices=nj_index)[ni_index]
-        b = g.personalized_pagerank(reset_vertices=ni_index)[rand_index] + g.personalized_pagerank(reset_vertices=rand_index)[ni_index] 
+        ni2nj= g.personalized_pagerank(reset_vertices=ni_index)[nj_index]
+        ni2rand= g.personalized_pagerank(reset_vertices=ni_index)[rand_index]
+        nj2ni = g.personalized_pagerank(reset_vertices=nj_index)[ni_index]
+        rand2ni = g.personalized_pagerank(reset_vertices=rand_index)[ni_index] 
+        
+        self.pagerank = (ni2nj,ni2rand,nj2ni,rand2ni)
+        a = ni2nj + nj2ni 
+        b = ni2rand + rand2ni
         
         return a, b
+    def pagerank_foreward(self,g,ni,nj,rand_node):
+        a = self.pagerank
+        return a[0],a[1]
+
+    def pagerank_backward(self,g,ni,nj,rand_node):
+        b = self.pagerank
+        return b[2],b[3]
+    
     @staticmethod
     def matrix_forest_index(g, ni,nj,rand_node):
         n = len(g.vs)
@@ -287,12 +301,10 @@ class index_global(object):
         c = nx.communicability_exp(uG)
         return c[ni][nj],c[ni][rand_node]
         
-        
     @staticmethod
     def harmonic(uG,ni,nj,rand_node):
         d = nx.harmonic_centrality(uG,[nj,rand_node]) 
         return d[nj],d[rand_node]
-    
     @staticmethod #link analysis
     def pagerank(g,ni,nj,rand_node):
         s = g.vs.select(name = nj)[0].index
@@ -342,6 +354,7 @@ class EdgeList(object):
         self.records_random = {}
         # self.functions = {"degree":indegree,"distance":index_local.cutoff_distance}
         self.functions = None 
+        self.ordered_index = []
         # a functions dictionary example is
         # {"degree":indegree,"distance":index_local.cutoff_distance,"distance":index_local.shortest_path_length}
         # ,"katz":index_global.katz, "k1sum":index_global.ink1sum}
@@ -390,11 +403,14 @@ class EdgeList(object):
                      "LHN1_uG":index_local.LHN1,
                      "average_commute_time_ig":loca.average_commute_time,
                      "cos_ig":loca.cos,
-                     "random_walk_with_restart_ig":index_local.random_walk_with_restart,
+                     "random_walk_with_restart_ig":loca.random_walk_with_restart,
+                     "pagerank_foreward_ig":loca.pagerank_foreward,
+                     "pagerank_backward_ig":loca.pagerank_backward,
                      "matrix_forest_index_ig":index_local.matrix_forest_index,
                      "efficiency_uG":index_local.efficiency
                      }
         self.functions = {}
+        self.ordered_index = indices_str
         for s in indices_str:
             self.functions[s] = all_index[s]
             
@@ -697,7 +713,8 @@ class EdgeList(object):
         num_edges_iii = 0
         num_edges_iv = 0
             
-        
+        func_names = list(self.functions.keys())
+        print("ordered index", func_names)
         
         for i in tqdm(range(N)):
         #for i in range(2*N):
@@ -721,7 +738,9 @@ class EdgeList(object):
                 
                 num_edges  =  num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
                 
-                for name_func in self.functions: # record the directed graph indices
+                 
+                # self.ordered_index_for_caculate:
+                for name_func in func_names: # record the directed graph indices
                     function = self.functions[name_func]
                     t1 = time.time()
                     if name_func[-2:] == "uG":
@@ -787,7 +806,7 @@ class EdgeList(object):
         print("type iii edges is " + str(num_edges_iii/N) +" in record edges!")
         print("type iv edges is " + str(num_edges_iv/N) +" in record edges!")
         
-        print(sorted(records_time.items(), key = lambda kv:(kv[1], kv[0]))) #打印所有方法使用时间
+        print("time cost is ",sorted(records_time.items(), key = lambda kv:(kv[1], kv[0]))) #打印所有方法使用时间
         return G
     
     def output_records(self):

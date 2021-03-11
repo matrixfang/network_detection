@@ -44,6 +44,8 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        #"average_commute_time_ig",
                        #time"cos_ig",
                        "random_walk_with_restart_ig",
+                       "pagerank_foreward_ig",
+                       "pagerank_backward_ig",
                        #"matrix_forest_index_ig",
                        "efficiency_uG"
                        ]
@@ -59,7 +61,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
     
     #print(el.edge_list)
     dg = el.evolve(max_edge_number = max_edge_number)
-    smooth_length = 100 #cut records at begin and end with 100
+    #smooth_length = 100 #cut records at begin and end with 100
     el.output_records()
     
     return el
@@ -246,6 +248,8 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
                        "HDI_uG",
                        "LHN1_uG",
                        "random_walk_with_restart_ig",
+                       "pagerank_foreward_ig",
+                       "pagerank_backward_ig",
                        "efficiency_uG"
                        ]
     
@@ -377,7 +381,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
 
 
 
-#file_name = './real_evolving_networks/hepph.txt'
+file_name = './real_evolving_networks/hepph.txt'
 #file_name = "./real_evolving_networks/hepth.txt"
 #file_name = "./real_evolving_networks/sx-mathoverflow-a2q.txt"
 #file_name = "./real_evolving_networks/sx-mathoverflow-c2a.txt"
