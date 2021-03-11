@@ -162,14 +162,15 @@ def casual_entropy(i,j,K,data):
 
 
     
-    x_clone = np.copy(x_vec)
+    #x_clone = np.copy(x_vec)
+    y_clone = np.copy(y_vec)
     ns = 200
     ci = 0.95
     outputs = []
     #outputs2 = []
     for i in range(ns):
-        np.random.shuffle(x_clone)
-        outputs.append(ee.cmidd(x_clone,y_vec,z_combine,base=2))
+        np.random.shuffle(y_clone)
+        outputs.append(ee.cmidd(x_vec,y_clone,z_combine,base=2))
         # outputs2.append(ee.midd(x_clone,y_vec,base=2))
     outputs.sort()
     # outputs2.sort()
@@ -221,14 +222,15 @@ def casual_entropy_empty(i,j,K,data):
     
         
 
-    x_clone = np.copy(x_vec)
+    # x_clone = np.copy(x_vec)
+    y_clone = np.copy(y_vec)
     ns = 200
     ci = 0.95
     outputs = []
     outputs2 = []
     for i in range(ns):
-        np.random.shuffle(x_clone)
-        outputs.append(ee.midd(x_clone,y_vec,base=2))
+        np.random.shuffle(y_clone)
+        outputs.append(ee.midd(x_vec,y_clone,base=2))
         # outputs2.append(ee.midd(x_clone,y_vec,base=2))
     outputs.sort()
     # outputs2.sort()

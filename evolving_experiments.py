@@ -230,7 +230,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
                        "h_index_uG",
                        "kshell_uG",
                        "hub_score_ig",
-                       "add_time",
+                       "add_time_uG",
                        
                        #"resource_allocation_uG",
                        #"jaccard_coefficient_uG",
@@ -287,7 +287,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
         index_data["if_rand"] = if_rand
         index_data[index] = index_records
         
-    m = int(np.power(len(index_data["if_rand"])/2,0.4)/2)
+    m = int(np.power(len(index_data["if_rand"]),0.4)/2)
     index_data = mix2discrete_data(index_data,m)
     
     # degree,if_rand = merge(el.records["degree"],el.records_random["degree"])
@@ -386,10 +386,11 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
 #file_name = "./real_evolving_networks/CollegeMsg.txt"
 #file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
 # t0 = time.time()
-el = network_evolve(file_name,max_edge_number=15000)
+el = network_evolve(file_name,max_edge_number=20000)
 analysis_index(el,3,0)
 analysis_index(el,3,1)
 analysis_index(el,3,2)
+
 # print("network evolve time is ",time.time()-t0)
 
 
