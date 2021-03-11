@@ -229,6 +229,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
                        "pagerank_ig",
                        "h_index_uG",
                        "kshell_uG",
+                       "add_time",
                        
                        #"resource_allocation_uG",
                        #"jaccard_coefficient_uG",
@@ -377,13 +378,12 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
 
 #file_name = './real_evolving_networks/hepph.txt'
 #file_name = "./real_evolving_networks/hepth.txt"
-# file_name = "./real_evolving_networks/sx-mathoverflow-a2q.txt"
-# file_name = "./real_evolving_networks/sx-mathoverflow-c2a.txt"
-# file_name = "./real_evolving_networks/sx-mathoverflow-c2q.txt"
-# file_name = "./real_evolving_networks/wiki-talk-temporal.txt"
-# file_name = "./real_evolving_networks/CollegeMsg.txt"
-
-file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
+#file_name = "./real_evolving_networks/sx-mathoverflow-a2q.txt"
+#file_name = "./real_evolving_networks/sx-mathoverflow-c2a.txt"
+#file_name = "./real_evolving_networks/sx-mathoverflow-c2q.txt"
+#file_name = "./real_evolving_networks/wiki-talk-temporal.txt"
+#file_name = "./real_evolving_networks/CollegeMsg.txt"
+#file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
 # t0 = time.time()
 el = network_evolve(file_name,max_edge_number=15000)
 analysis_index(el,3,0)
