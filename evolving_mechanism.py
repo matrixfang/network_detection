@@ -326,6 +326,9 @@ class index_global(object):
         rand_index = g.vs.select(name = rand_node)[0].index
         d = g.hub_score()
         return d[nj_index],d[rand_index]
+    @staticmethod
+    def add_time_tag(uG,ni,nj,rand_node):
+        return uG.nodes[nj]["add_time"],uG.nodes[rand_node]["add_time"]
         
 
 
@@ -367,6 +370,7 @@ class EdgeList(object):
                      "kshell_uG":index_global.kshell,
                      "hits_uG": index_global.hits,
                      "hub_score_ig":index_global.hub_score,
+                     "add_time_uG":index_global.add_time_tag,
                      
                      
                      "shortest_path_length_uG":index_local.shortest_path_length,
@@ -395,8 +399,8 @@ class EdgeList(object):
             self.functions[s] = all_index[s]
             
     def read_edgelist_file(self,file_name):
-        return self.__read_soc_edgelist_file(file_name)
-        #return self.__read_mathoverflow_file(file_name)
+        # return self.__read_soc_edgelist_file(file_name)
+        return self.__read_mathoverflow_file(file_name)
     
     def __read_mathoverflow_file(self,file_name):
         self.name = file_name.split('/')[-1].split(".")[-2]
@@ -733,9 +737,7 @@ class EdgeList(object):
                         records[name_func].append(target_value)
                         records_random[name_func].append(rand_value)
                     t2 = time.time()
-                    records_time[name_func] += t2-t1 
-                self.records["time"] = num_edges - uG.nodes[nj]["time"]
-                self.records_random["time"] = num_edges - uG.nodes[rand_node]["time"]
+                    records_time[name_func] += t2-t1
                 self.time_list.append(t) #record the indices and edge
                 
                 G.add_edge(ni,nj) # build the new edge
@@ -753,7 +755,7 @@ class EdgeList(object):
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
-                uG.nodes[ni]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
+                uG.nodes[ni]["add_time"] = i #添加时间
                 num_edges_ii +=1
             elif ni in G.nodes and nj not in G.nodes:
             
@@ -763,7 +765,7 @@ class EdgeList(object):
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
-                uG.nodes[nj]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
+                uG.nodes[nj]["add_time"] = i #添加时间
                 num_edges_iii +=1 # ni is an old node, but nj is a new node
             else:
                 G.add_edge(ni,nj)
@@ -772,8 +774,8 @@ class EdgeList(object):
                 s = g.vs.select(name = ni)[0].index
                 d = g.vs.select(name = nj)[0].index
                 g.add_edges([(s,d)])
-                uG.nodes[ni]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
-                uG.nodes[nj]["time"] = num_edges_i + num_edges_ii + num_edges_iii + num_edges_iv + 1
+                uG.nodes[ni]["add_time"] = i # 添加时间
+                uG.nodes[nj]["add_time"] = i # 添加时间
                 num_edges_iv +=1 # both ni, nj are new node
             if num_edges_i >N :
                 break

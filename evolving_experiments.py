@@ -21,6 +21,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        "h_index_uG",
                        "kshell_uG",
                        "hub_score_ig",
+                       "add_time_uG",
                        #"hits_uG",
                        
                        
@@ -251,13 +252,14 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
                     "jaccard_coefficient_uG","adamic_adar_index_uG","cn_soundarajan_hopcroft_uG",
                    "ra_index_soundarajan_hopcroft_uG","within_inter_cluster_uG"]
     
-    el.cut_records(normalize_indices=index4cutoff,smooth_length=400)
+    smooth_length = 400
+    el.cut_records(normalize_indices=index4cutoff,smooth_length=smooth_length)
     el.add_small_number_avoid_divide_by_zero(avoid_zero_indices=index4addepsilon,epsilon=0.01)    
-    el.cut_and_smooth_normalize_records(normalize_indices=index4normalize+index4addepsilon,smooth_length=400)
+    el.cut_and_smooth_normalize_records(normalize_indices=index4normalize+index4addepsilon,smooth_length=smooth_length)
     
 
-    total_slice_num = 2 # edgelist 切成5段
-    ordered_slice_num = 1 #选取要分析的一段, 可取 0,1,2,3,4,...total_slice_num-1
+    # total_slice_num = 2 # edgelist 切成5段
+    # ordered_slice_num = 1 #选取要分析的一段, 可取 0,1,2,3,4,...total_slice_num-1
     index_min =0
     index_max =0
     length = len(el.records["degree"])
@@ -381,7 +383,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
 # file_name = "./real_evolving_networks/wiki-talk-temporal.txt"
 # file_name = "./real_evolving_networks/CollegeMsg.txt"
 
-# file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
+file_name = "./real_evolving_networks/soc-sign-bitcoinalpha.txt"
 # t0 = time.time()
 el = network_evolve(file_name,max_edge_number=15000)
 analysis_index(el,3,0)
