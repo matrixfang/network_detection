@@ -25,7 +25,7 @@ def network_evolve(file_name,max_edge_number=float('inf')):
                        #"hits_uG",
                        
                        
-                       #"shortest_path_length_uG",
+                       "shortest_path_length_uG",
                        "resource_allocation_uG",
                        "jaccard_coefficient_uG",
                        "adamic_adar_index_uG",
@@ -229,6 +229,7 @@ def analysis_index(el,total_slice_num,ordered_slice_num):
                        "pagerank_ig",
                        "h_index_uG",
                        "kshell_uG",
+                       "hub_score_ig",
                        "add_time",
                        
                        #"resource_allocation_uG",
